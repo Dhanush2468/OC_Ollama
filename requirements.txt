@@ -1,0 +1,5 @@
+apscheduler>=3.10.4
+httpx>=0.27.0
+pyyaml>=6.0.1
+skyvern[local]>=1.0.32
+

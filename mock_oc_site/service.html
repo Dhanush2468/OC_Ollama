@@ -1,0 +1,95 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Service Details</title>
+    <link rel="stylesheet" href="./styles.css" />
+  </head>
+  <body>
+    <header class="topbar">
+      <div class="brand">Operation Console</div>
+      <div class="meta">
+        <span>Cluster: prod-main</span>
+        <span>Region: ap-south-1</span>
+        <span>Last refresh: 15:28:00</span>
+      </div>
+    </header>
+
+    <main class="layout">
+      <section class="panel">
+        <h2 id="title">Service Details</h2>
+        <p><a href="index.html">← Back to dashboard</a></p>
+
+        <div id="details" style="margin-top:12px">
+          <!-- details populated by script -->
+        </div>
+      </section>
+    </main>
+
+    <script>
+      const sample = {
+        "scheduler": {
+          id: "svc-1001",
+          name: "scheduler",
+          errorRate: "2.8%",
+          notes: "Retry storm observed",
+          managerTool: "Kubernetes (k8s) / Helm",
+          location: "ap-south-1 / namespace: prod"
+        },
+        "worker-pool": {
+          id: "svc-2002",
+          name: "worker-pool",
+          errorRate: "1.9%",
+          notes: "Two pods restarting",
+          managerTool: "Kubernetes (k8s)",
+          location: "ap-south-1 / node pool: t3a-large"
+        },
+        "event-bus": {
+          id: "svc-3003",
+          name: "event-bus",
+          errorRate: "0.2%",
+          notes: "No alert",
+          managerTool: "Managed Kafka",
+          location: "ap-south-1 / cluster: kafka-prod"
+        },
+        "notification-gateway": {
+          id: "svc-4004",
+          name: "notification-gateway",
+          errorRate: "0.1%",
+          notes: "No alert",
+          managerTool: "Serverless / Lambda",
+          location: "ap-south-1 / region edge"
+        }
+      };
+
+      function getParam(name) {
+        const params = new URLSearchParams(window.location.search);
+        return params.get(name);
+      }
+
+      function render(serviceId) {
+        const data = sample[serviceId] || { id: serviceId, name: serviceId, errorOccurred: 'N/A', managerTool: 'unknown', location: 'unknown' };
+        document.getElementById('title').textContent = `Service Details — ${data.name}`;
+
+        const container = document.getElementById('details');
+        container.innerHTML = `
+          <table>
+            <tbody>
+              <tr><th>Id</th><td>${data.id}</td></tr>
+              <tr><th>Name</th><td>${data.name}</td></tr>
+              <tr><th>Error Occurred</th><td>${data.errorOccurred}</td></tr>
+              <tr><th>Error Rate</th><td>${data.errorRate || 'N/A'}</td></tr>
+              <tr><th>Notes</th><td>${data.notes || ''}</td></tr>
+              <tr><th>Manager Tool</th><td>${data.managerTool}</td></tr>
+              <tr><th>Location</th><td>${data.location}</td></tr>
+            </tbody>
+          </table>
+        `;
+      }
+
+      const id = getParam('id') || 'unknown';
+      render(id);
+    </script>
+  </body>
+</html>

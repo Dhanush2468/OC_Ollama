@@ -1,0 +1,37 @@
+operation_console_url: "http://127.0.0.1:4173"
+
+preflight:
+  enabled: true
+  max_attempts: 5
+  request_timeout_seconds: 3
+  retry_delay_seconds: 2
+
+schedule:
+  mode: "interval" # one_time | interval
+  interval_seconds: 300
+  timezone: "Asia/Kolkata"
+
+skyvern:
+  headless: true
+  wait_after_load_seconds: 2
+  navigation_timeout_seconds: 45
+  viewport_width: 1920
+  viewport_height: 1080
+  extra_chromium_args:
+    - "--disable-dev-shm-usage"
+
+ollama:
+  base_url: "http://127.0.0.1:11434"
+  model: "qwen2.5vl:7b"
+  timeout_seconds: 180
+  max_page_content_chars: 12000
+  vision_enabled: true
+
+analysis:
+  max_findings: 5
+
+paths:
+  screenshots_dir: "./output/screenshots"
+  findings_dir: "./output/findings"
+  logs_dir: "./output/logs"
+  page_capture_dir: "./output/logs/page_captures"
