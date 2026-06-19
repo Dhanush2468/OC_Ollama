@@ -1,0 +1,636 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Operation Console Dashboard</title>
+    <link rel="stylesheet" href="./styles.css" />
+  </head>
+  <body>
+    <div class="console-app">
+      <aside class="sidebar">
+        <div class="sidebar-brand">Operation Console</div>
+
+        <nav>
+          <ul class="nav-list">
+            <li><a class="nav-item" href="#">Accounts</a></li>
+            <li><a class="nav-item active" href="#">Dashboard</a></li>
+            <li>
+              <button id="monitoring-toggle" class="nav-item nav-toggle" type="button" aria-expanded="false">
+                Montoring
+                <span class="caret">+</span>
+              </button>
+              <ul id="monitoring-menu" class="sub-nav" hidden>
+                <li><a id="account-monitoring-submenu-link" class="sub-item" href="#">Account Monitoring</a></li>
+                <li><a id="system-information-link" class="sub-item" href="#">System Information</a></li>
+                <li><a id="logs-link" class="sub-item" href="#">Logs</a></li>
+                <li><a id="das-validation-link" class="sub-item" href="#">DAS Validation</a></li>
+                <li><a id="restart-link" class="sub-item" href="#">Restart</a></li>
+                <li><a id="connectivity-check-link" class="sub-item" href="#">Connectivity Check</a></li>
+                <li><a id="network-link" class="sub-item" href="#">Network</a></li>
+                <li><a id="edge-device-monitoring-link" class="sub-item" href="#">Edge Device Montoring</a></li>
+              </ul>
+            </li>
+            <li><a class="nav-item" href="#">Massdeploymeny</a></li>
+            <li><a class="nav-item" href="#">Audit Trail</a></li>
+            <li><a class="nav-item" href="#">Global Setting</a></li>
+            <li><a class="nav-item" href="#">Usermanagement</a></li>
+          </ul>
+        </nav>
+      </aside>
+
+      <main class="console-content">
+        <div class="console-tools">
+          <label class="top-search" for="global-table-search">
+            <span>Search</span>
+            <input id="global-table-search" type="search" placeholder="Search services, customer, line..." />
+          </label>
+        </div>
+
+        <section class="panel console-panel">
+          <h1>Dashboard</h1>
+          <p>This is the new dashboard shell. Use the left navigation to access modules.</p>
+        </section>
+
+        <section id="account-monitoring-empty" class="panel console-panel" hidden>
+          <div class="section-head account-header">
+            <h2>Edge Device Montoring</h2>
+            <button id="last-hour-button" type="button" class="last-hour-btn">Last Hour</button>
+          </div>
+
+          <div class="account-search-row">
+            <label for="account-monitoring-search">Search Customer</label>
+            <input id="account-monitoring-search" type="search" placeholder="Type customer name to load monitoring details" />
+          </div>
+
+          <div class="account-tabs">
+            <button id="account-tab-service" class="account-tab active" type="button">Service Status</button>
+            <button id="account-tab-readkit" class="account-tab" type="button">Readkit Status</button>
+          </div>
+
+          <div id="account-tab-service-panel">
+
+          <div class="account-summary-grid">
+            <div class="summary-card">
+              <p class="summary-label">Customer Name</p>
+              <p id="summary-customer-name" class="summary-value"></p>
+            </div>
+            <div class="summary-card">
+              <p class="summary-label">Overall Status</p>
+              <div id="summary-overall-status"></div>
+            </div>
+            <div class="summary-card">
+              <p class="summary-label">S2A Account ID</p>
+              <p id="summary-account-id" class="summary-value"></p>
+            </div>
+            <div class="summary-card">
+              <p class="summary-label">UUID</p>
+              <p id="summary-uuid" class="summary-value"></p>
+            </div>
+            <div class="summary-card right-statuses">
+              <p class="summary-label">Readykit status</p>
+              <div id="summary-readykit-status"></div>
+              <p class="summary-label service-label">Service status</p>
+              <div id="summary-service-status"></div>
+            </div>
+          </div>
+
+          <div class="account-layout">
+            <section class="account-table-card">
+              <table class="account-status-table" id="account-status-table">
+                <thead>
+                  <tr>
+                    <th>
+                      <span class="header-inline">
+                        Component
+                        <span class="filter-icon" aria-hidden="true"></span>
+                      </span>
+                    </th>
+                    <th>
+                      <span class="header-inline">
+                        Status
+                        <span class="filter-icon" aria-hidden="true"></span>
+                      </span>
+                    </th>
+                    <th>
+                      <span class="header-inline">
+                        Last Status Change
+                        <span class="filter-icon" aria-hidden="true"></span>
+                      </span>
+                    </th>
+                  </tr>
+                </thead>
+                <tbody id="account-status-body"></tbody>
+              </table>
+            </section>
+
+            <aside class="details-panel" id="account-error-panel">
+              <h3>Error Details</h3>
+              <p class="details-muted">Hover or click a row with an issue to inspect details.</p>
+              <dl id="account-error-details"></dl>
+            </aside>
+          </div>
+          </div>
+
+          <div id="account-tab-readkit-panel" hidden>
+            <section class="account-table-card">
+              <table class="account-status-table readkit-table">
+                <thead>
+                  <tr>
+                    <th>Status Type</th>
+                    <th>Status</th>
+                  </tr>
+                </thead>
+                <tbody id="readkit-status-body"></tbody>
+              </table>
+            </section>
+          </div>
+        </section>
+
+        <section id="monitoring-feature" class="panel console-panel" hidden>
+          <div class="section-head">
+            <h2>Edge Device Montoring</h2>
+            <button id="download-visible-csv" type="button" class="download-icon-btn" title="Download CSV" aria-label="Download CSV">
+              <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+                <path d="M12 3a1 1 0 0 1 1 1v8.59l2.3-2.3a1 1 0 1 1 1.4 1.42l-4 4a1 1 0 0 1-1.4 0l-4-4a1 1 0 1 1 1.4-1.42l2.3 2.3V4a1 1 0 0 1 1-1Zm-7 14a1 1 0 0 1 1 1v1h12v-1a1 1 0 1 1 2 0v2a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1v-2a1 1 0 0 1 1-1Z" />
+              </svg>
+            </button>
+          </div>
+          <div class="condition-table-wrap">
+            <table class="condition-table">
+              <thead>
+                <tr>
+                  <th>
+                    <div class="header-cell">
+                      <span>ED Status</span>
+                      <select id="filter-ed-status">
+                        <option value="">All</option>
+                        <option value="OK" selected>OK</option>
+                      </select>
+                    </div>
+                  </th>
+                  <th>
+                    <div class="header-cell">
+                      <span>ED Service Status</span>
+                      <select id="filter-ed-service-status">
+                        <option value="">All</option>
+                        <option value="Major">Major</option>
+                        <option value="Minor">Minor</option>
+                        <option value="Ignore">Ignore</option>
+                      </select>
+                    </div>
+                  </th>
+                  <th>
+                    <div class="header-cell">
+                      <span>ED Service Name</span>
+                      <select id="filter-ed-service-name">
+                        <option value="">All</option>
+                        <option value="Scheduler Sync">Scheduler Sync</option>
+                        <option value="Edge Gateway">Edge Gateway</option>
+                        <option value="Alarm Collector">Alarm Collector</option>
+                      </select>
+                    </div>
+                  </th>
+                  <th>
+                    <div class="header-cell">
+                      <span>ED Condition</span>
+                      <select id="filter-ed-condition">
+                        <option value="">All</option>
+                        <option value="Subscription and Smart COM" selected>Subscription and Smart COM</option>
+                        <option value="License and Provisioning">License and Provisioning</option>
+                      </select>
+                    </div>
+                  </th>
+                  <th>
+                    <div class="header-cell">
+                      <span>Customer Name</span>
+                      <input id="filter-customer-name" type="text" placeholder="Filter customer" />
+                    </div>
+                  </th>
+                  <th>
+                    <div class="header-cell">
+                      <span>Line Number</span>
+                      <input id="filter-line-number" type="text" placeholder="Filter line" />
+                    </div>
+                  </th>
+                  <th>
+                    <div class="header-cell">
+                      <span>ED Service Last Status (Last Seen)</span>
+                      <input id="filter-ed-service-last-status" type="text" placeholder="Filter status" />
+                    </div>
+                  </th>
+                </tr>
+              </thead>
+              <tbody id="edge-monitoring-body">
+                <tr>
+                  <td>OK</td>
+                  <td>Major</td>
+                  <td>Scheduler Sync</td>
+                  <td>Subscription and Smart COM</td>
+                  <td>Acme Telecom</td>
+                  <td>A1</td>
+                  <td>Sync Complete | Last Seen: 2026-06-19 10:15:22</td>
+                </tr>
+                <tr>
+                  <td>OK</td>
+                  <td>Minor</td>
+                  <td>Edge Gateway</td>
+                  <td>Subscription and Smart COM</td>
+                  <td>Nova Industries</td>
+                  <td>B4</td>
+                  <td>Warning Raised | Last Seen: 2026-06-19 10:16:04</td>
+                </tr>
+                <tr>
+                  <td>OK</td>
+                  <td>Ignore</td>
+                  <td>Alarm Collector</td>
+                  <td>Subscription and Smart COM</td>
+                  <td>Skyline Networks</td>
+                  <td>C9</td>
+                  <td>Escalated | Last Seen: 2026-06-19 10:17:41</td>
+                </tr>
+                <tr><td>OK</td><td>Major</td><td>Scheduler Sync</td><td>License and Provisioning</td><td>Bluewire Systems</td><td>D2</td><td>Provisioned | Last Seen: 2026-06-19 10:18:12</td></tr>
+                <tr><td>OK</td><td>Minor</td><td>Edge Gateway</td><td>License and Provisioning</td><td>Zenith Mobile</td><td>E7</td><td>Awaiting License | Last Seen: 2026-06-19 10:18:56</td></tr>
+                <tr><td>OK</td><td>Ignore</td><td>Alarm Collector</td><td>Subscription and Smart COM</td><td>Orion Cable</td><td>F5</td><td>Ignored by Policy | Last Seen: 2026-06-19 10:19:34</td></tr>
+                <tr><td>OK</td><td>Major</td><td>Scheduler Sync</td><td>Subscription and Smart COM</td><td>Apex Fiber</td><td>G1</td><td>Resync Triggered | Last Seen: 2026-06-19 10:20:11</td></tr>
+                <tr><td>OK</td><td>Minor</td><td>Edge Gateway</td><td>License and Provisioning</td><td>MetroNet Labs</td><td>H3</td><td>Retry Scheduled | Last Seen: 2026-06-19 10:21:03</td></tr>
+                <tr><td>OK</td><td>Ignore</td><td>Alarm Collector</td><td>License and Provisioning</td><td>Nimbus Connect</td><td>I8</td><td>Ignored by Rule | Last Seen: 2026-06-19 10:21:48</td></tr>
+                <tr><td>OK</td><td>Major</td><td>Scheduler Sync</td><td>Subscription and Smart COM</td><td>Vertex Telecom</td><td>J6</td><td>Batch Completed | Last Seen: 2026-06-19 10:22:20</td></tr>
+                <tr><td>OK</td><td>Minor</td><td>Edge Gateway</td><td>Subscription and Smart COM</td><td>Rapid Link</td><td>K2</td><td>Health Warning | Last Seen: 2026-06-19 10:22:57</td></tr>
+                <tr><td>OK</td><td>Ignore</td><td>Alarm Collector</td><td>License and Provisioning</td><td>PrimeWave</td><td>L4</td><td>Archived Event | Last Seen: 2026-06-19 10:23:39</td></tr>
+                <tr><td>OK</td><td>Major</td><td>Scheduler Sync</td><td>License and Provisioning</td><td>CloudSpan</td><td>M9</td><td>License Updated | Last Seen: 2026-06-19 10:24:05</td></tr>
+                <tr><td>OK</td><td>Minor</td><td>Edge Gateway</td><td>Subscription and Smart COM</td><td>Fusion Broadband</td><td>N5</td><td>Latency Notice | Last Seen: 2026-06-19 10:24:49</td></tr>
+                <tr><td>OK</td><td>Ignore</td><td>Alarm Collector</td><td>Subscription and Smart COM</td><td>Silverline ISP</td><td>O3</td><td>No Action Needed | Last Seen: 2026-06-19 10:25:31</td></tr>
+                <tr><td>OK</td><td>Major</td><td>Scheduler Sync</td><td>Subscription and Smart COM</td><td>Harbor Networks</td><td>P7</td><td>Sync Completed | Last Seen: 2026-06-19 10:26:18</td></tr>
+                <tr><td>OK</td><td>Minor</td><td>Edge Gateway</td><td>License and Provisioning</td><td>StreamNet</td><td>Q1</td><td>Pending Approval | Last Seen: 2026-06-19 10:27:02</td></tr>
+                <tr><td>OK</td><td>Ignore</td><td>Alarm Collector</td><td>License and Provisioning</td><td>GridCom</td><td>R8</td><td>Suppressed Alert | Last Seen: 2026-06-19 10:27:40</td></tr>
+                <tr><td>OK</td><td>Major</td><td>Scheduler Sync</td><td>Subscription and Smart COM</td><td>EastPoint Telecom</td><td>S2</td><td>Auto Remediated | Last Seen: 2026-06-19 10:28:19</td></tr>
+                <tr><td>OK</td><td>Minor</td><td>Edge Gateway</td><td>Subscription and Smart COM</td><td>NorthStar Data</td><td>T6</td><td>Queue Delay | Last Seen: 2026-06-19 10:29:01</td></tr>
+                <tr><td>OK</td><td>Ignore</td><td>Alarm Collector</td><td>License and Provisioning</td><td>UltraMesh</td><td>U4</td><td>Muted by Operator | Last Seen: 2026-06-19 10:29:43</td></tr>
+                <tr><td>OK</td><td>Major</td><td>Scheduler Sync</td><td>License and Provisioning</td><td>Pulse Fiber</td><td>V9</td><td>Profile Refreshed | Last Seen: 2026-06-19 10:30:22</td></tr>
+              </tbody>
+            </table>
+          </div>
+        </section>
+      </main>
+    </div>
+
+    <script>
+      const monitoringToggle = document.getElementById("monitoring-toggle");
+      const monitoringMenu = document.getElementById("monitoring-menu");
+      const caret = monitoringToggle.querySelector(".caret");
+      const accountMonitoringSubmenuLink = document.getElementById("account-monitoring-submenu-link");
+      const systemInformationLink = document.getElementById("system-information-link");
+      const logsLink = document.getElementById("logs-link");
+      const dasValidationLink = document.getElementById("das-validation-link");
+      const restartLink = document.getElementById("restart-link");
+      const connectivityCheckLink = document.getElementById("connectivity-check-link");
+      const networkLink = document.getElementById("network-link");
+      const edgeDeviceMonitoringLink = document.getElementById("edge-device-monitoring-link");
+      const accountMonitoringEmptySection = document.getElementById("account-monitoring-empty");
+      const accountMonitoringSearch = document.getElementById("account-monitoring-search");
+      const accountTabService = document.getElementById("account-tab-service");
+      const accountTabReadkit = document.getElementById("account-tab-readkit");
+      const accountTabServicePanel = document.getElementById("account-tab-service-panel");
+      const accountTabReadkitPanel = document.getElementById("account-tab-readkit-panel");
+      const accountStatusBody = document.getElementById("account-status-body");
+      const accountErrorPanel = document.getElementById("account-error-panel");
+      const accountErrorDetails = document.getElementById("account-error-details");
+      const readkitStatusBody = document.getElementById("readkit-status-body");
+      const summaryCustomerName = document.getElementById("summary-customer-name");
+      const summaryOverallStatus = document.getElementById("summary-overall-status");
+      const summaryAccountId = document.getElementById("summary-account-id");
+      const summaryUuid = document.getElementById("summary-uuid");
+      const summaryReadykitStatus = document.getElementById("summary-readykit-status");
+      const summaryServiceStatus = document.getElementById("summary-service-status");
+      const monitoringFeatureSection = document.getElementById("monitoring-feature");
+      const edgeMonitoringBody = document.getElementById("edge-monitoring-body");
+      const downloadVisibleCsvButton = document.getElementById("download-visible-csv");
+      const globalTableSearch = document.getElementById("global-table-search");
+
+      function extractLastSeen(statusText) {
+        const marker = "Last Seen:";
+        const index = statusText.indexOf(marker);
+        return index >= 0 ? statusText.slice(index + marker.length).trim() : "N/A";
+      }
+
+      function toProblemStatus(serviceStatus) {
+        return serviceStatus.toLowerCase() === "major" ? "Major problem" : "OK";
+      }
+
+      function buildAccountRowsFromEdge(edgeRow) {
+        const normalizedLastStatus = edgeRow.edServiceLastStatus.toLowerCase();
+        const edgeIngestStatus = normalizedLastStatus.includes("warning") || normalizedLastStatus.includes("escalated")
+          ? "Major problem"
+          : "OK";
+
+        const serviceProblem = toProblemStatus(edgeRow.edServiceStatus);
+        const lastSeen = extractLastSeen(edgeRow.edServiceLastStatus);
+
+        return [
+          {
+            component: "Service status",
+            status: serviceProblem,
+            lastStatusChange: lastSeen,
+            details: {
+              failedAdapterSourceId: `src-${edgeRow.customerName.toLowerCase().replaceAll(" ", "-")}`,
+              failedTagsCount: 4,
+              tagList: "WS_Cur_State, KRO_Prod_Typ, WS_Cur_Mode, Edge_Sync_State"
+            }
+          },
+          {
+            component: "DAS service status",
+            status: serviceProblem,
+            lastStatusChange: lastSeen,
+            details: {
+              failedAdapterSourceId: `das-${edgeRow.lineNumber.toLowerCase()}`,
+              failedTagsCount: 3,
+              tagList: "DAS_Queue_Depth, DAS_Write_Lag, DAS_Conn_State"
+            }
+          },
+          {
+            component: "Datapoint to cloud latency",
+            status: edgeRow.edStatus,
+            lastStatusChange: lastSeen
+          },
+          {
+            component: "Edge Stream Ingest",
+            status: edgeIngestStatus,
+            lastStatusChange: lastSeen,
+            details: {
+              failedAdapterSourceId: `ingest-${edgeRow.edServiceName.toLowerCase().replaceAll(" ", "-")}`,
+              failedTagsCount: 2,
+              tagList: "WS_Cur_State, KRO_Prod_Typ"
+            }
+          }
+        ];
+      }
+
+      const edgeRows = Array.from(edgeMonitoringBody.querySelectorAll("tr")).map((row) => {
+        const cells = row.querySelectorAll("td");
+        return {
+          edStatus: cells[0].textContent.trim(),
+          edServiceStatus: cells[1].textContent.trim(),
+          edServiceName: cells[2].textContent.trim(),
+          edCondition: cells[3].textContent.trim(),
+          customerName: cells[4].textContent.trim(),
+          lineNumber: cells[5].textContent.trim(),
+          edServiceLastStatus: cells[6].textContent.trim()
+        };
+      });
+
+      const accountMonitoringData = edgeRows.map((item, index) => {
+        const serviceProblem = toProblemStatus(item.edServiceStatus);
+        return {
+          customerName: item.customerName,
+          overallStatus: serviceProblem,
+          s2aAccountId: `S2A-${100000 + index}`,
+          uuid: `${item.lineNumber.toLowerCase()}-${index.toString().padStart(4, "0")}-${item.customerName.toLowerCase().replaceAll(" ", "-")}`,
+          readykitStatus: item.edStatus,
+          edStatus: item.edStatus,
+          serviceStatus: serviceProblem,
+          rows: buildAccountRowsFromEdge(item)
+        };
+      });
+
+      function statusBadge(status) {
+        const normalized = status.toLowerCase();
+        const isOk = normalized === "ok";
+        const icon = isOk
+          ? '<span class="status-icon ok" aria-hidden="true"></span>'
+          : '<span class="status-icon warn" aria-hidden="true"></span>';
+        return `<span class="status-badge ${isOk ? "ok" : "warn"}">${icon}${status}</span>`;
+      }
+
+      function normalizeToOkOrError(status) {
+        return status.toLowerCase() === "ok" ? "OK" : "Error";
+      }
+
+      function renderReadkitStatus(selectedAccount) {
+        const rows = [
+          ["KOP Status", normalizeToOkOrError(selectedAccount.serviceStatus)],
+          ["RK Status", normalizeToOkOrError(selectedAccount.readykitStatus)],
+          ["ED Status", normalizeToOkOrError(selectedAccount.edStatus)]
+        ];
+
+        readkitStatusBody.innerHTML = "";
+        rows.forEach(([label, status]) => {
+          const tr = document.createElement("tr");
+          tr.innerHTML = `<td>${label}</td><td>${statusBadge(status)}</td>`;
+          readkitStatusBody.appendChild(tr);
+        });
+      }
+
+      function renderErrorPanel(details) {
+        if (!details) {
+          accountErrorDetails.innerHTML = "";
+          return;
+        }
+
+        accountErrorDetails.innerHTML = `
+          <dt>Failed adapter source id</dt>
+          <dd>${details.failedAdapterSourceId}</dd>
+          <dt>Failed tags count</dt>
+          <dd>${details.failedTagsCount}</dd>
+          <dt>Tag list</dt>
+          <dd>${details.tagList}</dd>
+        `;
+      }
+
+      function renderStatusTable(rows) {
+        accountStatusBody.innerHTML = "";
+
+        rows.forEach((row) => {
+          const tableRow = document.createElement("tr");
+          const hasError = row.status.toLowerCase() === "major problem";
+          if (hasError) {
+            tableRow.classList.add("has-error");
+          }
+
+          tableRow.innerHTML = `
+            <td>${row.component}</td>
+            <td>${statusBadge(row.status)}</td>
+            <td>${row.lastStatusChange}</td>
+          `;
+
+          if (hasError) {
+            tableRow.addEventListener("mouseenter", () => renderErrorPanel(row.details));
+            tableRow.addEventListener("click", () => renderErrorPanel(row.details));
+          }
+
+          accountStatusBody.appendChild(tableRow);
+        });
+      }
+
+      function loadAccountMonitoringData(searchQuery) {
+        const query = searchQuery.trim().toLowerCase();
+        const selectedAccount = accountMonitoringData.find((item) => item.customerName.toLowerCase().includes(query)) || accountMonitoringData[0];
+
+        summaryCustomerName.textContent = selectedAccount.customerName;
+        summaryOverallStatus.innerHTML = statusBadge(selectedAccount.overallStatus);
+        summaryReadykitStatus.innerHTML = statusBadge(selectedAccount.readykitStatus);
+        summaryServiceStatus.innerHTML = statusBadge(selectedAccount.serviceStatus);
+        summaryAccountId.textContent = selectedAccount.s2aAccountId;
+        summaryUuid.textContent = selectedAccount.uuid;
+
+        renderStatusTable(selectedAccount.rows);
+        renderReadkitStatus(selectedAccount);
+        const firstError = selectedAccount.rows.find((row) => row.status.toLowerCase() === "major problem");
+        renderErrorPanel(firstError ? firstError.details : null);
+      }
+
+      function setAccountTab(tabName) {
+        const isService = tabName === "service";
+        accountTabService.classList.toggle("active", isService);
+        accountTabReadkit.classList.toggle("active", !isService);
+        accountTabServicePanel.hidden = !isService;
+        accountTabReadkitPanel.hidden = isService;
+      }
+
+      const filterElements = {
+        edStatus: document.getElementById("filter-ed-status"),
+        edServiceStatus: document.getElementById("filter-ed-service-status"),
+        edServiceName: document.getElementById("filter-ed-service-name"),
+        edCondition: document.getElementById("filter-ed-condition"),
+        customerName: document.getElementById("filter-customer-name"),
+        lineNumber: document.getElementById("filter-line-number"),
+        edServiceLastStatus: document.getElementById("filter-ed-service-last-status")
+      };
+
+      function applyFilters() {
+        const rows = edgeMonitoringBody.querySelectorAll("tr");
+        const filters = {
+          edStatus: filterElements.edStatus.value.trim().toLowerCase(),
+          edServiceStatus: filterElements.edServiceStatus.value.trim().toLowerCase(),
+          edServiceName: filterElements.edServiceName.value.trim().toLowerCase(),
+          edCondition: filterElements.edCondition.value.trim().toLowerCase(),
+          customerName: filterElements.customerName.value.trim().toLowerCase(),
+          lineNumber: filterElements.lineNumber.value.trim().toLowerCase(),
+          edServiceLastStatus: filterElements.edServiceLastStatus.value.trim().toLowerCase(),
+          global: globalTableSearch.value.trim().toLowerCase()
+        };
+
+        rows.forEach((row) => {
+          const cells = row.querySelectorAll("td");
+          const matches =
+            (!filters.edStatus || cells[0].textContent.toLowerCase().includes(filters.edStatus)) &&
+            (!filters.edServiceStatus || cells[1].textContent.toLowerCase().includes(filters.edServiceStatus)) &&
+            (!filters.edServiceName || cells[2].textContent.toLowerCase().includes(filters.edServiceName)) &&
+            (!filters.edCondition || cells[3].textContent.toLowerCase().includes(filters.edCondition)) &&
+            (!filters.customerName || cells[4].textContent.toLowerCase().includes(filters.customerName)) &&
+            (!filters.lineNumber || cells[5].textContent.toLowerCase().includes(filters.lineNumber)) &&
+            (!filters.edServiceLastStatus || cells[6].textContent.toLowerCase().includes(filters.edServiceLastStatus));
+
+          const rowText = Array.from(cells)
+            .map((cell) => cell.textContent.toLowerCase())
+            .join(" ");
+          const matchesGlobal = !filters.global || rowText.includes(filters.global);
+
+          row.style.display = matches && matchesGlobal ? "" : "none";
+        });
+      }
+
+      function escapeCsv(value) {
+        const text = String(value ?? "");
+        return `"${text.replaceAll('"', '""')}"`;
+      }
+
+      function downloadVisibleRowsAsCsv() {
+        const headers = [
+          "ED Status",
+          "ED Service Status",
+          "ED Service Name",
+          "ED Condition",
+          "Customer Name",
+          "Line Number",
+          "ED Service Last Status (Last Seen)"
+        ];
+
+        const visibleRows = Array.from(edgeMonitoringBody.querySelectorAll("tr")).filter((row) => {
+          return row.style.display !== "none";
+        });
+
+        const csvLines = [headers.map(escapeCsv).join(",")];
+
+        visibleRows.forEach((row) => {
+          const cells = Array.from(row.querySelectorAll("td")).map((cell) => escapeCsv(cell.textContent.trim()));
+          csvLines.push(cells.join(","));
+        });
+
+        const csvBlob = new Blob([csvLines.join("\n")], { type: "text/csv;charset=utf-8;" });
+        const csvUrl = URL.createObjectURL(csvBlob);
+        const link = document.createElement("a");
+        const timestamp = new Date().toISOString().replaceAll(":", "-");
+        link.href = csvUrl;
+        link.download = `edge-device-monitoring-${timestamp}.csv`;
+        document.body.appendChild(link);
+        link.click();
+        link.remove();
+        URL.revokeObjectURL(csvUrl);
+      }
+
+      function showMonitoringFeature() {
+        accountMonitoringEmptySection.hidden = true;
+        monitoringFeatureSection.hidden = false;
+        monitoringFeatureSection.scrollIntoView({ behavior: "smooth", block: "start" });
+      }
+
+      function showAccountMonitoringEmptyPage() {
+        monitoringFeatureSection.hidden = true;
+        accountMonitoringEmptySection.hidden = false;
+        loadAccountMonitoringData(accountMonitoringSearch.value);
+        accountMonitoringEmptySection.scrollIntoView({ behavior: "smooth", block: "start" });
+      }
+
+      monitoringToggle.addEventListener("click", () => {
+        const isExpanded = monitoringToggle.getAttribute("aria-expanded") === "true";
+        const shouldExpand = !isExpanded;
+        monitoringToggle.setAttribute("aria-expanded", String(shouldExpand));
+        monitoringMenu.hidden = !shouldExpand;
+        caret.textContent = shouldExpand ? "-" : "+";
+
+        if (shouldExpand) {
+          showMonitoringFeature();
+        }
+      });
+
+      accountMonitoringSubmenuLink.addEventListener("click", (event) => {
+        event.preventDefault();
+        showAccountMonitoringEmptyPage();
+      });
+
+      [
+        systemInformationLink,
+        logsLink,
+        dasValidationLink,
+        restartLink,
+        connectivityCheckLink,
+        networkLink,
+        edgeDeviceMonitoringLink
+      ].forEach((submenuLink) => {
+        submenuLink.addEventListener("click", (event) => {
+          event.preventDefault();
+          showMonitoringFeature();
+        });
+      });
+
+      Object.values(filterElements).forEach((element) => {
+        const eventName = element.tagName === "SELECT" ? "change" : "input";
+        element.addEventListener(eventName, applyFilters);
+      });
+
+      globalTableSearch.addEventListener("input", applyFilters);
+      accountMonitoringSearch.addEventListener("input", () => {
+        loadAccountMonitoringData(accountMonitoringSearch.value);
+      });
+      accountTabService.addEventListener("click", () => setAccountTab("service"));
+      accountTabReadkit.addEventListener("click", () => setAccountTab("readkit"));
+
+      downloadVisibleCsvButton.addEventListener("click", downloadVisibleRowsAsCsv);
+
+      applyFilters();
+      loadAccountMonitoringData("");
+      setAccountTab("service");
+    </script>
+  </body>
+</html>

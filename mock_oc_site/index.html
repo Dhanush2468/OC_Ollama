@@ -3,135 +3,30 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Operation Console</title>
+    <title>Operation Console Sign In</title>
     <link rel="stylesheet" href="./styles.css" />
   </head>
-  <body>
-    <header class="topbar">
-      <div class="brand">Operation Console</div>
-      <div class="meta">
-        <span>Cluster: prod-main</span>
-        <span>Region: ap-south-1</span>
-        <span>Last refresh: 15:28:00</span>
-      </div>
-    </header>
-
-    <main class="layout">
-      <section class="panel">
-        <h2>System Health</h2>
-        <div class="kpi-grid">
-          <article class="kpi">
-            <p class="kpi-label">Active Pipelines</p>
-            <p class="kpi-value">42</p>
-            <p class="kpi-foot">Within expected range</p>
-          </article>
-          <article class="kpi warn">
-            <p class="kpi-label">Failed Jobs (30m)</p>
-            <p class="kpi-value">17</p>
-            <p class="kpi-foot">Above threshold (&gt;5)</p>
-          </article>
-          <article class="kpi warn">
-            <p class="kpi-label">Queue Backlog</p>
-            <p class="kpi-value">1,284</p>
-            <p class="kpi-foot">Draining slowly</p>
-          </article>
-          <article class="kpi">
-            <p class="kpi-label">API Latency P95</p>
-            <p class="kpi-value">412ms</p>
-            <p class="kpi-foot">Target: &lt;450ms</p>
-          </article>
-        </div>
-      </section>
-
-      <section class="panel">
-        <h2>Service Status</h2>
-        <table>
-          <thead>
-            <tr>
-              <th>Service</th>
-              <th>Status</th>
-              <th>Error Rate</th>
-              <th>Notes</th>
-            </tr>
-          </thead>
-          <tbody>
-            <tr>
-              <td><a href="service.html?id=scheduler">scheduler</a></td>
-              <td><span class="badge down">degraded</span></td>
-              <td>2.8%</td>
-              <td>Retry storm observed</td>
-            </tr>
-            <tr>
-              <td><a href="service.html?id=worker-pool">worker-pool</a></td>
-              <td><span class="badge down">degraded</span></td>
-              <td>1.9%</td>
-              <td>Two pods restarting</td>
-            </tr>
-            <tr>
-              <td><a href="service.html?id=event-bus">event-bus</a></td>
-              <td><span class="badge up">healthy</span></td>
-              <td>0.2%</td>
-              <td>No alert</td>
-            </tr>
-            <tr>
-              <td><a href="service.html?id=notification-gateway">notification-gateway</a></td>
-              <td><span class="badge up">healthy</span></td>
-              <td>0.1%</td>
-              <td>No alert</td>
-            </tr>
-          </tbody>
-        </table>
-      </section>
-
-      <section class="panel split">
-        <div>
-          <h2>Recent Incidents</h2>
-          <ul class="incidents">
-            <li>
-              <span class="sev high">High</span>
-              Batch import jobs failed due to DB connection timeout.
-            </li>
-            <li>
-              <span class="sev med">Medium</span>
-              Queue depth exceeded warning threshold for 12 minutes.
-            </li>
-            <li>
-              <span class="sev low">Low</span>
-              Notification delivery delayed in eu-west worker group.
-            </li>
-          </ul>
-        </div>
-        <div>
-          <h2>Top Failed Jobs</h2>
-          <table>
-            <thead>
-              <tr>
-                <th>Job</th>
-                <th>Count</th>
-                <th>Last Error</th>
-              </tr>
-            </thead>
-            <tbody>
-              <tr>
-                <td>ingest-orders</td>
-                <td>9</td>
-                <td>DB timeout</td>
-              </tr>
-              <tr>
-                <td>sync-reports</td>
-                <td>5</td>
-                <td>HTTP 502</td>
-              </tr>
-              <tr>
-                <td>billing-retry</td>
-                <td>3</td>
-                <td>rate limited</td>
-              </tr>
-            </tbody>
-          </table>
-        </div>
+  <body class="signin-page">
+    <main class="signin-shell">
+      <section class="signin-card">
+        <p class="signin-overline">Operation Console</p>
+        <h1>Sign in to continue</h1>
+        <p class="signin-copy">
+          Use your Coprote ID through Single Sign-On to access the dashboard.
+        </p>
+        <button id="coprote-sso" class="sso-btn" type="button">
+          Sign in with Coprote ID (SSO)
+        </button>
+        <p class="signin-note">Mock login flow for local testing.</p>
       </section>
     </main>
+
+    <script>
+      const ssoButton = document.getElementById("coprote-sso");
+      ssoButton.addEventListener("click", () => {
+        window.location.href = "dashboard.html";
+      });
+    </script>
   </body>
 </html>
 
