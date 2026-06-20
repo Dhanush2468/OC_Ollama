@@ -22,6 +22,7 @@
               </button>
               <ul id="monitoring-menu" class="sub-nav" hidden>
                 <li><a id="account-monitoring-submenu-link" class="sub-item" href="#">Account Monitoring</a></li>
+                <li><a id="ssm-link" class="sub-item" href="#">SSM</a></li>
                 <li><a id="system-information-link" class="sub-item" href="#">System Information</a></li>
                 <li><a id="logs-link" class="sub-item" href="#">Logs</a></li>
                 <li><a id="das-validation-link" class="sub-item" href="#">DAS Validation</a></li>
@@ -272,6 +273,290 @@
             </table>
           </div>
         </section>
+
+        <section id="ssm-feature" class="panel console-panel ssm-panel" hidden>
+          <div class="section-head ssm-head">
+            <div>
+              <h2>SSM (Anlage 3 - Freiham)</h2>
+            </div>
+          </div>
+
+          <div class="ssm-tabs" role="tablist" aria-label="SSM command mode">
+            <button id="ssm-tab-custom" class="ssm-tab active" type="button" role="tab" aria-selected="true">CUSTOM COMMAND</button>
+            <button id="ssm-tab-predefined" class="ssm-tab" type="button" role="tab" aria-selected="false">PREDEFINED COMMANDS</button>
+          </div>
+
+          <section id="ssm-custom-panel" class="ssm-panel-body">
+            <div class="ssm-command-box">
+              <label for="ssm-command-input" class="ssm-label">Command</label>
+              <textarea id="ssm-command-input" class="ssm-command-input" spellcheck="false">ping -c3 172.26.73.76</textarea>
+            </div>
+
+            <div class="ssm-controls-row">
+              <label class="ssm-checkbox">
+                <input id="ssm-show-input-lines" type="checkbox" checked />
+                <span>Show input lines in output</span>
+              </label>
+
+              <button id="ssm-start-command" class="ssm-start-btn" type="button">START COMMAND</button>
+            </div>
+
+            <section class="ssm-result-section">
+              <div class="ssm-result-head">
+                <h3>Result <span aria-hidden="true">✅</span></h3>
+                <div class="ssm-result-tools">
+                  <button id="ssm-copy-output" class="ssm-tool-btn" type="button" aria-label="Copy output">Copy</button>
+                  <button id="ssm-expand-output" class="ssm-tool-btn" type="button" aria-label="Expand output">Expand</button>
+                </div>
+              </div>
+
+              <div id="ssm-loading" class="ssm-loading" hidden>Running command...</div>
+              <div id="ssm-result-output" class="ssm-output-box"></div>
+            </section>
+          </section>
+
+          <section id="ssm-predefined-panel" class="ssm-panel-body" hidden>
+            <div class="ssm-predef-list">
+              <button type="button" class="ssm-predef-btn" data-command="ping -c3 127.0.0.1">ping -c3 127.0.0.1</button>
+              <button type="button" class="ssm-predef-btn" data-command="ping -c3 8.8.8.8">ping -c3 8.8.8.8</button>
+              <button type="button" class="ssm-predef-btn" data-command="ping -c3 172.26.73.76">ping -c3 172.26.73.76</button>
+            </div>
+          </section>
+        </section>
+
+        <section id="connectivity-feature" class="panel console-panel connectivity-panel" hidden>
+          <div class="section-head connectivity-head">
+            <h2>Connectivity Check (Anlage 3 - Freiham)</h2>
+          </div>
+
+          <div class="connectivity-tabs" role="tablist" aria-label="Connectivity mode">
+            <button id="connectivity-tab-internet" class="connectivity-tab" type="button" role="tab" aria-selected="false">INTERNET</button>
+            <button id="connectivity-tab-machines" class="connectivity-tab active" type="button" role="tab" aria-selected="true">MACHINES</button>
+          </div>
+
+          <section id="connectivity-internet-panel" class="connectivity-body" hidden>
+            <div class="connectivity-placeholder">Internet checks are available in this mock view.</div>
+          </section>
+
+          <section id="connectivity-machines-panel" class="connectivity-body">
+            <div class="connectivity-filter-row">
+              <div class="connectivity-filter-left">
+                <h3>Machines</h3>
+                <div class="connectivity-radios" role="radiogroup" aria-label="Machine dataset">
+                  <label><input type="radio" name="connectivity-dataset" value="media" checked /> Media</label>
+                  <label><input type="radio" name="connectivity-dataset" value="das-configs" /> DAS Configs</label>
+                </div>
+                <div class="connectivity-add-row">
+                  <span>Additional addresses to check</span>
+                  <button id="connectivity-add-address" class="connectivity-add-btn" type="button" aria-label="Add address">+</button>
+                </div>
+              </div>
+
+              <div class="connectivity-filter-right">
+                <button id="connectivity-check-all" class="connectivity-check-btn" type="button">
+                  CHECK ALL CONNECTIONS
+                  <span class="btn-arrow" aria-hidden="true">▾</span>
+                </button>
+              </div>
+            </div>
+
+            <div class="connectivity-table-wrap">
+              <table class="connectivity-table">
+                <thead>
+                  <tr>
+                    <th scope="col" data-sort-key="status">
+                      <button type="button" class="connectivity-sort-btn" data-sort-key="status">
+                        Status
+                        <span class="header-icons" aria-hidden="true"><span class="mini-filter"></span><span class="mini-sort"></span></span>
+                      </button>
+                    </th>
+                    <th scope="col" data-sort-key="equipment">
+                      <button type="button" class="connectivity-sort-btn" data-sort-key="equipment">
+                        Equipment
+                        <span class="header-icons" aria-hidden="true"><span class="mini-filter"></span><span class="mini-sort"></span></span>
+                      </button>
+                    </th>
+                    <th scope="col" data-sort-key="kNumber">
+                      <button type="button" class="connectivity-sort-btn" data-sort-key="kNumber">
+                        Equipment K-Number
+                        <span class="header-icons" aria-hidden="true"><span class="mini-filter"></span><span class="mini-sort"></span></span>
+                      </button>
+                    </th>
+                    <th scope="col" data-sort-key="uuid">
+                      <button type="button" class="connectivity-sort-btn" data-sort-key="uuid">
+                        Equipment UUID
+                        <span class="header-icons" aria-hidden="true"><span class="mini-filter"></span><span class="mini-sort"></span></span>
+                      </button>
+                    </th>
+                    <th scope="col" data-sort-key="sourceId">
+                      <button type="button" class="connectivity-sort-btn" data-sort-key="sourceId">
+                        Source ID
+                        <span class="header-icons" aria-hidden="true"><span class="mini-filter"></span><span class="mini-sort"></span></span>
+                      </button>
+                    </th>
+                    <th scope="col" data-sort-key="ip">
+                      <button type="button" class="connectivity-sort-btn" data-sort-key="ip">
+                        IP
+                        <span class="header-icons" aria-hidden="true"><span class="mini-filter"></span><span class="mini-sort"></span></span>
+                      </button>
+                    </th>
+                    <th scope="col" data-sort-key="port">
+                      <button type="button" class="connectivity-sort-btn" data-sort-key="port">
+                        Port
+                        <span class="header-icons" aria-hidden="true"><span class="mini-filter"></span><span class="mini-sort"></span></span>
+                      </button>
+                    </th>
+                  </tr>
+                </thead>
+                <tbody id="connectivity-table-body"></tbody>
+              </table>
+            </div>
+          </section>
+        </section>
+
+        <section id="das-validation-feature" class="panel console-panel das-validation-panel" hidden>
+          <div class="section-head das-validation-head">
+            <div>
+              <h2>DAS Validation (60k CSD Ergobloc Line)</h2>
+              <p class="das-validation-subtitle">Live validation summary for line adapters and connectivity quality.</p>
+            </div>
+          </div>
+
+          <section id="das-adapters-main-view" class="das-adapters-section">
+            <div class="das-adapters-head">
+              <h3>DAS adapters</h3>
+              <label class="das-search" for="das-adapters-search">
+                <span class="das-search-icon" aria-hidden="true">
+                  <svg viewBox="0 0 24 24" focusable="false">
+                    <path d="M10.5 3a7.5 7.5 0 0 1 5.97 12.04l4.74 4.74a1 1 0 1 1-1.42 1.42l-4.74-4.74A7.5 7.5 0 1 1 10.5 3Zm0 2a5.5 5.5 0 1 0 0 11 5.5 5.5 0 0 0 0-11Z" />
+                  </svg>
+                </span>
+                <input id="das-adapters-search" type="search" placeholder="Search equipment, address, status, source id..." />
+              </label>
+            </div>
+
+            <div class="das-table-wrap">
+              <table class="das-table">
+                <thead>
+                  <tr>
+                    <th class="icon-col" scope="col" aria-label="Info"></th>
+                    <th scope="col" data-sort-key="equipment">
+                      <button type="button" class="das-sort-btn" data-sort-key="equipment">
+                        Equipment
+                        <span class="header-icons" aria-hidden="true"><span class="mini-filter"></span><span class="mini-sort"></span></span>
+                      </button>
+                    </th>
+                    <th scope="col" data-sort-key="equipmentKey">
+                      <button type="button" class="das-sort-btn" data-sort-key="equipmentKey">
+                        Equipment Key
+                        <span class="header-icons" aria-hidden="true"><span class="mini-filter"></span><span class="mini-sort"></span></span>
+                      </button>
+                    </th>
+                    <th scope="col" data-sort-key="address">
+                      <button type="button" class="das-sort-btn" data-sort-key="address">
+                        Address
+                        <span class="header-icons" aria-hidden="true"><span class="mini-filter"></span><span class="mini-sort"></span></span>
+                      </button>
+                    </th>
+                    <th scope="col" data-sort-key="type">
+                      <button type="button" class="das-sort-btn" data-sort-key="type">
+                        Type
+                        <span class="header-icons" aria-hidden="true"><span class="mini-filter"></span><span class="mini-sort"></span></span>
+                      </button>
+                    </th>
+                    <th scope="col" data-sort-key="sourceId">
+                      <button type="button" class="das-sort-btn" data-sort-key="sourceId">
+                        Source ID
+                        <span class="header-icons" aria-hidden="true"><span class="mini-filter"></span><span class="mini-sort"></span></span>
+                      </button>
+                    </th>
+                    <th scope="col" data-sort-key="status">
+                      <button type="button" class="das-sort-btn" data-sort-key="status">
+                        Status
+                        <span class="header-icons" aria-hidden="true"><span class="mini-filter"></span><span class="mini-sort"></span></span>
+                      </button>
+                    </th>
+                    <th scope="col" data-sort-key="tagsInError">
+                      <button type="button" class="das-sort-btn" data-sort-key="tagsInError">
+                        Tags in Error
+                        <span class="header-icons" aria-hidden="true"><span class="mini-filter"></span><span class="mini-sort"></span></span>
+                      </button>
+                    </th>
+                    <th scope="col" data-sort-key="errorMessage">
+                      <button type="button" class="das-sort-btn" data-sort-key="errorMessage">
+                        Error Message
+                        <span class="header-icons" aria-hidden="true"><span class="mini-filter"></span><span class="mini-sort"></span></span>
+                      </button>
+                    </th>
+                  </tr>
+                </thead>
+                <tbody id="das-adapters-body"></tbody>
+              </table>
+            </div>
+          </section>
+
+          <section id="das-adapter-details-view" class="das-adapters-section" hidden>
+            <div class="das-details-toolbar">
+              <button id="das-details-back" class="das-back-btn" type="button" aria-label="Back to DAS adapters">
+                <span aria-hidden="true">&larr;</span>
+              </button>
+
+              <div class="das-details-controls">
+                <label class="das-search das-details-search" for="das-detail-search">
+                  <span class="das-search-icon" aria-hidden="true">
+                    <svg viewBox="0 0 24 24" focusable="false">
+                      <path d="M10.5 3a7.5 7.5 0 0 1 5.97 12.04l4.74 4.74a1 1 0 1 1-1.42 1.42l-4.74-4.74A7.5 7.5 0 1 1 10.5 3Zm0 2a5.5 5.5 0 1 0 0 11 5.5 5.5 0 0 0 0-11Z" />
+                    </svg>
+                  </span>
+                  <input id="das-detail-search" type="search" placeholder="Search tag, source id, or value..." />
+                  <button id="das-detail-clear" class="das-clear-btn" type="button" aria-label="Clear search">x</button>
+                </label>
+
+                <label class="das-state-filter-wrap" for="das-detail-state-filter">
+                  <span>State</span>
+                  <select id="das-detail-state-filter" class="das-state-filter">
+                    <option value="">All</option>
+                    <option value="ok">Ok</option>
+                    <option value="error">Error</option>
+                  </select>
+                </label>
+
+                <button id="das-detail-refresh" class="das-refresh-btn" type="button" aria-label="Refresh values">
+                  <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+                    <path d="M12 4a8 8 0 0 1 7.32 4.78 1 1 0 1 1-1.84.78A6 6 0 1 0 17 15h-2a1 1 0 1 1 0-2h4a1 1 0 0 1 1 1v4a1 1 0 1 1-2 0v-1.28A8 8 0 1 1 12 4Z" />
+                  </svg>
+                  <span>Refresh values</span>
+                </button>
+              </div>
+            </div>
+
+            <div class="das-details-headline">
+              <h3>DAS adapters</h3>
+              <p>DAS adapter read values</p>
+            </div>
+
+            <div id="das-selected-context" class="das-selected-context"></div>
+
+            <div class="das-table-wrap">
+              <table class="das-read-table">
+                <thead>
+                  <tr>
+                    <th>Actions</th>
+                    <th>Tag</th>
+                    <th>Source ID</th>
+                    <th>State</th>
+                    <th>Flags</th>
+                    <th>Timestamp</th>
+                    <th>Tag order</th>
+                    <th>Numeric value</th>
+                    <th>String value</th>
+                  </tr>
+                </thead>
+                <tbody id="das-read-values-body"></tbody>
+              </table>
+            </div>
+          </section>
+        </section>
       </main>
     </div>
 
@@ -280,6 +565,7 @@
       const monitoringMenu = document.getElementById("monitoring-menu");
       const caret = monitoringToggle.querySelector(".caret");
       const accountMonitoringSubmenuLink = document.getElementById("account-monitoring-submenu-link");
+      const ssmLink = document.getElementById("ssm-link");
       const systemInformationLink = document.getElementById("system-information-link");
       const logsLink = document.getElementById("logs-link");
       const dasValidationLink = document.getElementById("das-validation-link");
@@ -304,9 +590,278 @@
       const summaryReadykitStatus = document.getElementById("summary-readykit-status");
       const summaryServiceStatus = document.getElementById("summary-service-status");
       const monitoringFeatureSection = document.getElementById("monitoring-feature");
+      const ssmFeatureSection = document.getElementById("ssm-feature");
+      const connectivityFeatureSection = document.getElementById("connectivity-feature");
+      const dasValidationSection = document.getElementById("das-validation-feature");
       const edgeMonitoringBody = document.getElementById("edge-monitoring-body");
       const downloadVisibleCsvButton = document.getElementById("download-visible-csv");
       const globalTableSearch = document.getElementById("global-table-search");
+      const dasAdaptersSearch = document.getElementById("das-adapters-search");
+      const dasAdaptersBody = document.getElementById("das-adapters-body");
+      const dasSortButtons = Array.from(document.querySelectorAll(".das-sort-btn"));
+      const dasAdaptersMainView = document.getElementById("das-adapters-main-view");
+      const dasAdapterDetailsView = document.getElementById("das-adapter-details-view");
+      const dasDetailsBackButton = document.getElementById("das-details-back");
+      const dasDetailSearch = document.getElementById("das-detail-search");
+      const dasDetailClear = document.getElementById("das-detail-clear");
+      const dasDetailStateFilter = document.getElementById("das-detail-state-filter");
+      const dasDetailRefresh = document.getElementById("das-detail-refresh");
+      const dasReadValuesBody = document.getElementById("das-read-values-body");
+      const dasSelectedContext = document.getElementById("das-selected-context");
+      const ssmTabCustom = document.getElementById("ssm-tab-custom");
+      const ssmTabPredefined = document.getElementById("ssm-tab-predefined");
+      const ssmCustomPanel = document.getElementById("ssm-custom-panel");
+      const ssmPredefinedPanel = document.getElementById("ssm-predefined-panel");
+      const ssmCommandInput = document.getElementById("ssm-command-input");
+      const ssmShowInputLines = document.getElementById("ssm-show-input-lines");
+      const ssmStartCommand = document.getElementById("ssm-start-command");
+      const ssmLoading = document.getElementById("ssm-loading");
+      const ssmResultOutput = document.getElementById("ssm-result-output");
+      const ssmCopyOutput = document.getElementById("ssm-copy-output");
+      const ssmExpandOutput = document.getElementById("ssm-expand-output");
+      const ssmPredefButtons = Array.from(document.querySelectorAll(".ssm-predef-btn"));
+      const connectivityTabInternet = document.getElementById("connectivity-tab-internet");
+      const connectivityTabMachines = document.getElementById("connectivity-tab-machines");
+      const connectivityInternetPanel = document.getElementById("connectivity-internet-panel");
+      const connectivityMachinesPanel = document.getElementById("connectivity-machines-panel");
+      const connectivityDatasetRadios = Array.from(document.querySelectorAll('input[name="connectivity-dataset"]'));
+      const connectivityAddAddressButton = document.getElementById("connectivity-add-address");
+      const connectivityCheckAllButton = document.getElementById("connectivity-check-all");
+      const connectivityTableBody = document.getElementById("connectivity-table-body");
+      const connectivitySortButtons = Array.from(document.querySelectorAll(".connectivity-sort-btn"));
+
+      const dasAdaptersData = [
+        {
+          equipment: "Blend processing unit CONTIFLOW",
+          equipmentKey: "CONTIFLOW-01",
+          address: "opc.tcp://10.60.1.11:4840",
+          type: "OPC UA",
+          sourceId: "2f5de932-9f0f-4dc1-a8bf-3443f4ef66ea",
+          status: "Running",
+          tagsInError: "0/312",
+          errorMessage: "No active faults"
+        },
+        {
+          equipment: "Bottle filling station MODULFILL",
+          equipmentKey: "MODULFILL-04",
+          address: "opc.tcp://10.60.1.21:4840",
+          type: "OPC UA",
+          sourceId: "9d9f7947-5f5a-4ff9-8f6b-9abf68e0f90b",
+          status: "Faulted",
+          tagsInError: "1/51",
+          errorMessage: "ConfigMismatch: Missing tag bindings"
+        },
+        {
+          equipment: "Container labeling unit ERGOMODUL",
+          equipmentKey: "ERGOMODUL-02",
+          address: "http://10.60.1.52/ws/labels",
+          type: "WS",
+          sourceId: "ebf6e18e-9f9d-48ab-8fd9-0a37f42b0a2f",
+          status: "Standby",
+          tagsInError: "0/127",
+          errorMessage: "No active faults"
+        },
+        {
+          equipment: "Vision inspection unit CHECKMAT",
+          equipmentKey: "CHECKMAT-X1",
+          address: "opc.tcp://10.60.2.41:4840",
+          type: "OPC UA",
+          sourceId: "92bc3ae0-ccec-4d6d-9ecf-89495e28fd78",
+          status: "Faulted",
+          tagsInError: "5/661",
+          errorMessage: "TransportDrop: Gateway timeout"
+        },
+        {
+          equipment: "Vision inspection unit CHECKMAT",
+          equipmentKey: "CHECKMAT-X2",
+          address: "opc.tcp://10.60.2.42:4840",
+          type: "OPC UA",
+          sourceId: "5d2bcaa8-9de2-4f98-b4ec-8a39cd96dd0c",
+          status: "Running",
+          tagsInError: "0/661",
+          errorMessage: "No active faults"
+        },
+        {
+          equipment: "Vision inspection unit CHECKMAT",
+          equipmentKey: "CHECKMAT-WS",
+          address: "http://10.60.2.43/ws/inspection",
+          type: "WS",
+          sourceId: "e2f9661b-6ea8-44f6-a534-fdf699319d31",
+          status: "Standby",
+          tagsInError: "0/204",
+          errorMessage: "No active faults"
+        },
+        {
+          equipment: "Case packing unit VARIOPAC",
+          equipmentKey: "VARIOPAC-03",
+          address: "opc.tcp://10.60.3.10:4840",
+          type: "OPC UA",
+          sourceId: "bdf5b642-a113-4872-90cb-2e45e5f0dc7c",
+          status: "Running",
+          tagsInError: "0/188",
+          errorMessage: "No active faults"
+        },
+        {
+          equipment: "Palletizing unit MODULPAL",
+          equipmentKey: "MODULPAL-07",
+          address: "opc.tcp://10.60.3.22:4840",
+          type: "OPC UA",
+          sourceId: "083be8f5-e5be-4d10-88a7-7d9a56da8bc8",
+          status: "Faulted",
+          tagsInError: "2/140",
+          errorMessage: "TransportDrop: Gateway timeout"
+        },
+        {
+          equipment: "PET quality scanner PET-VIEW",
+          equipmentKey: "PETVIEW-09",
+          address: "http://10.60.4.19/ws/pet-view",
+          type: "WS",
+          sourceId: "1ab5542b-77b6-42a8-9f3d-4a5907309b7f",
+          status: "Standby",
+          tagsInError: "0/77",
+          errorMessage: "No active faults"
+        },
+        {
+          equipment: "Pallet wrapping unit Robopac/Aetna",
+          equipmentKey: "AETNA-STW-11",
+          address: "opc.tcp://10.60.4.35:4840",
+          type: "OPC UA",
+          sourceId: "0f03602e-b0b6-4315-b966-06079252ce84",
+          status: "Running",
+          tagsInError: "0/94",
+          errorMessage: "No active faults"
+        },
+        {
+          equipment: "Stretch blow molding unit CONTIFORM",
+          equipmentKey: "CONTIFORM-06",
+          address: "opc.tcp://10.60.4.50:4840",
+          type: "OPC UA",
+          sourceId: "1d3d3cf8-6539-427e-89ea-d7881237fd5a",
+          status: "Faulted",
+          tagsInError: "3/233",
+          errorMessage: "ConfigMismatch: Missing tag bindings"
+        }
+      ];
+
+      const dasSortState = {
+        key: "equipment",
+        direction: "asc"
+      };
+
+      let selectedDasAdapter = null;
+      let ssmLastPlainOutput = "";
+      let connectivityExtraCount = 0;
+
+      const connectivitySortState = {
+        key: "equipment",
+        direction: "asc"
+      };
+
+      const connectivityRows = [
+        {
+          dataset: "media",
+          status: "success",
+          equipment: "Palettenentlader PRESSANT DUPLEX 2NT",
+          kNumber: "KR52771",
+          uuid: "5f7d2ad9-c7d9-4d6c-8d89-d8bf0dc1fd19",
+          sourceId: "5f7d2ad9-c7d9-4d6c-8d89-d8bf0dc1fd19_media_main",
+          ip: "172.26.73.14",
+          port: "4840"
+        },
+        {
+          dataset: "media",
+          status: "failed",
+          equipment: "Flaschenfueller MODULFILL HES",
+          kNumber: "KR52772",
+          uuid: "2054e942-0139-49b2-8d74-22d9b4fd20d1",
+          sourceId: "2054e942-0139-49b2-8d74-22d9b4fd20d1_media_opc",
+          ip: "172.26.73.18",
+          port: "55005"
+        },
+        {
+          dataset: "media",
+          status: "success",
+          equipment: "Etikettierer ERGOMODUL 15T",
+          kNumber: "KR52773",
+          uuid: "6f59c2b4-f46e-4e9a-9bc8-97c7676a5f92",
+          sourceId: "6f59c2b4-f46e-4e9a-9bc8-97c7676a5f92_media_ws",
+          ip: "172.26.73.21",
+          port: "102"
+        },
+        {
+          dataset: "das-configs",
+          status: "failed",
+          equipment: "Inspektor CHECKMAT 731",
+          kNumber: "KR52774",
+          uuid: "99b7aef5-0b54-48d4-94b8-2ecf5dfca7ba",
+          sourceId: "99b7aef5-0b54-48d4-94b8-2ecf5dfca7ba_das_cfg",
+          ip: "172.26.73.28",
+          port: "4840"
+        },
+        {
+          dataset: "das-configs",
+          status: "success",
+          equipment: "Packer VARIOPAC PRO",
+          kNumber: "KR52775",
+          uuid: "3f0581d2-5088-466d-9d8d-75ba0877a71a",
+          sourceId: "3f0581d2-5088-466d-9d8d-75ba0877a71a_das_cfg",
+          ip: "172.26.73.31",
+          port: "55005"
+        },
+        {
+          dataset: "das-configs",
+          status: "success",
+          equipment: "Palettierer MODULPAL 2A",
+          kNumber: "KR52776",
+          uuid: "f8b6a0c6-af85-4514-b7c7-f258674f4f7e",
+          sourceId: "f8b6a0c6-af85-4514-b7c7-f258674f4f7e_das_gateway",
+          ip: "172.26.73.36",
+          port: "102"
+        }
+      ];
+
+      const dasReadValuesData = [
+        {
+          tag: "K893426/LABELLER_MMA.LABELLER_MMA1.WS_Cur_Mach_Spd REAL",
+          sourceId: "cc96b671-c14b-46d8-9532-1b2a71834fcb_dmm_1_meda",
+          state: "Ok",
+          flags: "0",
+          timestamp: "10 June 2026 at 4:39:54 pm",
+          tagOrder: "6138",
+          numericValue: "900.0333",
+          stringValue: "empty"
+        },
+        {
+          tag: "K893426/LABELLER_MMA.LABELLER_MMA1.WS_Cur_State STRUCTURE",
+          sourceId: "cc96b671-c14b-46d8-9532-1b2a71834fcb_dmm_1_meda",
+          state: "Error",
+          flags: "32",
+          timestamp: "10 June 2026 at 4:39:54 pm",
+          tagOrder: "6140",
+          numericValue: "0",
+          stringValue: '{"UDIntValue":128,"timestamp":1781096950340}'
+        },
+        {
+          tag: "K893426/LABELLER_MMA.LABELLER_MMA1.WS_Mach_Design_Spd REAL",
+          sourceId: "cc96b671-c14b-46d8-9532-1b2a71834fcb_dmm_1_meda",
+          state: "Ok",
+          flags: "0",
+          timestamp: "10 June 2026 at 4:39:54 pm",
+          tagOrder: "6142",
+          numericValue: "990",
+          stringValue: "empty"
+        },
+        {
+          tag: "K893426/LABELLER_MMA.LABELLER_MMA1.WS_Set_Mach_Spd REAL",
+          sourceId: "cc96b671-c14b-46d8-9532-1b2a71834fcb_dmm_1_meda",
+          state: "Ok",
+          flags: "0",
+          timestamp: "10 June 2026 at 4:39:54 pm",
+          tagOrder: "6143",
+          numericValue: "990",
+          stringValue: "empty"
+        }
+      ];
 
       function extractLastSeen(statusText) {
         const marker = "Last Seen:";
@@ -530,6 +1085,411 @@
         });
       }
 
+      function parseTagsError(text) {
+        const [failed, total] = text.split("/").map((value) => Number.parseInt(value, 10) || 0);
+        return {
+          failed,
+          total
+        };
+      }
+
+      function getDasCellValue(row, key) {
+        if (key === "tagsInError") {
+          const tags = parseTagsError(row.tagsInError);
+          return tags.failed * 100000 + tags.total;
+        }
+        return row[key].toLowerCase();
+      }
+
+      function switchSsmTab(tab) {
+        const isCustom = tab === "custom";
+        ssmTabCustom.classList.toggle("active", isCustom);
+        ssmTabPredefined.classList.toggle("active", !isCustom);
+        ssmTabCustom.setAttribute("aria-selected", String(isCustom));
+        ssmTabPredefined.setAttribute("aria-selected", String(!isCustom));
+        ssmCustomPanel.hidden = !isCustom;
+        ssmPredefinedPanel.hidden = isCustom;
+      }
+
+      function currentConnectivityDataset() {
+        return connectivityDatasetRadios.find((radio) => radio.checked)?.value || "media";
+      }
+
+      function switchConnectivityTab(tab) {
+        const isMachines = tab === "machines";
+        connectivityTabMachines.classList.toggle("active", isMachines);
+        connectivityTabInternet.classList.toggle("active", !isMachines);
+        connectivityTabMachines.setAttribute("aria-selected", String(isMachines));
+        connectivityTabInternet.setAttribute("aria-selected", String(!isMachines));
+        connectivityMachinesPanel.hidden = !isMachines;
+        connectivityInternetPanel.hidden = isMachines;
+      }
+
+      function connectivityStatusMarkup(status) {
+        if (status === "success") {
+          return '<span class="conn-status ok" aria-label="Reachable" title="Reachable"><span class="conn-icon" aria-hidden="true">✅</span></span>';
+        }
+        return '<span class="conn-status fail" aria-label="Failed" title="Failed"><span class="conn-icon" aria-hidden="true">🔺</span></span>';
+      }
+
+      function getConnectivitySortValue(row, key) {
+        if (key === "status") {
+          return row.status === "success" ? 0 : 1;
+        }
+        if (key === "port") {
+          return Number.parseInt(row.port, 10) || 0;
+        }
+        return row[key].toLowerCase();
+      }
+
+      function renderConnectivityTable() {
+        const dataset = currentConnectivityDataset();
+        const filtered = connectivityRows.filter((row) => row.dataset === dataset);
+        const sorted = [...filtered].sort((left, right) => {
+          const leftValue = getConnectivitySortValue(left, connectivitySortState.key);
+          const rightValue = getConnectivitySortValue(right, connectivitySortState.key);
+          if (leftValue < rightValue) {
+            return connectivitySortState.direction === "asc" ? -1 : 1;
+          }
+          if (leftValue > rightValue) {
+            return connectivitySortState.direction === "asc" ? 1 : -1;
+          }
+          return 0;
+        });
+
+        connectivityTableBody.innerHTML = "";
+        sorted.forEach((row) => {
+          const tr = document.createElement("tr");
+          tr.innerHTML = `
+            <td>${connectivityStatusMarkup(row.status)}</td>
+            <td>${escapeHtml(row.equipment)}</td>
+            <td>${escapeHtml(row.kNumber)}</td>
+            <td>${escapeHtml(row.uuid)}</td>
+            <td>${escapeHtml(row.sourceId)}</td>
+            <td>${escapeHtml(row.ip)}</td>
+            <td>${escapeHtml(row.port)}</td>
+          `;
+          connectivityTableBody.appendChild(tr);
+        });
+      }
+
+      function applyConnectivitySort(sortKey) {
+        if (connectivitySortState.key === sortKey) {
+          connectivitySortState.direction = connectivitySortState.direction === "asc" ? "desc" : "asc";
+        } else {
+          connectivitySortState.key = sortKey;
+          connectivitySortState.direction = "asc";
+        }
+
+        connectivitySortButtons.forEach((button) => {
+          const isActive = button.dataset.sortKey === connectivitySortState.key;
+          button.classList.toggle("active", isActive);
+        });
+
+        renderConnectivityTable();
+      }
+
+      function mockCheckAllConnections() {
+        connectivityRows.forEach((row) => {
+          row.status = Math.random() < 0.72 ? "success" : "failed";
+        });
+        renderConnectivityTable();
+      }
+
+      function addMockConnectivityAddress() {
+        connectivityExtraCount += 1;
+        const dataset = currentConnectivityDataset();
+        const tail = 60 + connectivityExtraCount;
+        const uuidBase = `00000000-0000-4000-8000-${String(100000000000 + connectivityExtraCount)}`;
+        connectivityRows.push({
+          dataset,
+          status: Math.random() < 0.5 ? "success" : "failed",
+          equipment: `Additional Address ${connectivityExtraCount}`,
+          kNumber: `KR52${800 + connectivityExtraCount}`,
+          uuid: uuidBase,
+          sourceId: `${uuidBase}_${dataset.replace("-", "_")}_extra`,
+          ip: `172.26.73.${tail}`,
+          port: dataset === "media" ? "4840" : "55005"
+        });
+        renderConnectivityTable();
+      }
+
+      function isValidIpv4(ip) {
+        const octets = ip.split(".");
+        if (octets.length !== 4) {
+          return false;
+        }
+        return octets.every((octet) => {
+          if (!/^\d+$/.test(octet)) {
+            return false;
+          }
+          const value = Number.parseInt(octet, 10);
+          return value >= 0 && value <= 255;
+        });
+      }
+
+      function randomPingTime() {
+        return (0.48 + Math.random() * 0.42).toFixed(3);
+      }
+
+      function renderSsmOutput(lines) {
+        ssmResultOutput.innerHTML = "";
+        lines.forEach((entry) => {
+          const line = document.createElement("div");
+          line.className = `ssm-line ${entry.type}`;
+          line.innerHTML = `<span class="ssm-prefix">${entry.type}</span><span class="ssm-text">${escapeHtml(entry.text)}</span>`;
+          ssmResultOutput.appendChild(line);
+        });
+      }
+
+      function buildSsmPingOutput(command, ipAddress) {
+        const lines = [];
+        if (ssmShowInputLines.checked) {
+          lines.push({ type: "in", text: command });
+        }
+
+        lines.push({ type: "out", text: `PING ${ipAddress} (${ipAddress}) 56(84) bytes of data.` });
+        lines.push({ type: "out", text: `64 bytes from ${ipAddress}: icmp_seq=1 ttl=127 time=${randomPingTime()} ms` });
+        lines.push({ type: "out", text: `64 bytes from ${ipAddress}: icmp_seq=2 ttl=127 time=${randomPingTime()} ms` });
+        lines.push({ type: "out", text: `64 bytes from ${ipAddress}: icmp_seq=3 ttl=127 time=${randomPingTime()} ms` });
+        lines.push({ type: "out", text: `--- ${ipAddress} ping statistics ---` });
+        lines.push({ type: "out", text: "3 packets transmitted, 3 received, 0% packet loss, time 49ms" });
+
+        const times = [randomPingTime(), randomPingTime(), randomPingTime()].map((value) => Number.parseFloat(value));
+        const min = Math.min(...times).toFixed(3);
+        const max = Math.max(...times).toFixed(3);
+        const avg = (times.reduce((sum, value) => sum + value, 0) / times.length).toFixed(3);
+        const mdev = (Math.max(...times) - Math.min(...times)).toFixed(3);
+        lines.push({ type: "out", text: `rtt min/avg/max/mdev = ${min}/${avg}/${max}/${mdev} ms` });
+
+        return lines;
+      }
+
+      function buildSsmErrorOutput(command) {
+        const lines = [];
+        if (ssmShowInputLines.checked) {
+          lines.push({ type: "in", text: command });
+        }
+        lines.push({ type: "err", text: "Invalid command. Only ping -c3 <IP> is supported." });
+        return lines;
+      }
+
+      function commandLinesToPlainText(lines) {
+        return lines.map((line) => `${line.type}     ${line.text}`).join("\n");
+      }
+
+      function runSsmCommand() {
+        const command = ssmCommandInput.value.trim();
+        const match = command.match(/^ping\s+-c3\s+([^\s]+)$/i);
+        const ipAddress = match ? match[1] : "";
+        const valid = Boolean(match) && isValidIpv4(ipAddress);
+
+        ssmLoading.hidden = false;
+        ssmResultOutput.innerHTML = "";
+
+        window.setTimeout(() => {
+          ssmLoading.hidden = true;
+          const lines = valid ? buildSsmPingOutput(command, ipAddress) : buildSsmErrorOutput(command);
+          renderSsmOutput(lines);
+          ssmLastPlainOutput = commandLinesToPlainText(lines);
+        }, 1200);
+      }
+
+      function dasStatusBadge(status) {
+        if (status === "Running") {
+          return '<span class="das-status-badge started">Running</span>';
+        }
+        if (status === "Standby") {
+          return '<span class="das-status-badge initialized">Standby</span>';
+        }
+        return '<span class="das-status-badge in-error">Faulted</span>';
+      }
+
+      function escapeHtml(value) {
+        return String(value)
+          .replaceAll("&", "&amp;")
+          .replaceAll("<", "&lt;")
+          .replaceAll(">", "&gt;")
+          .replaceAll('"', "&quot;")
+          .replaceAll("'", "&#39;");
+      }
+
+      function highlightTagKey(tag) {
+        const safeTag = escapeHtml(tag);
+        return safeTag.replace(/(WS_[A-Za-z0-9_]+)/g, '<span class="tag-key-highlight">$1</span>');
+      }
+
+      function renderSelectedAdapterContext(adapter) {
+        if (!adapter) {
+          dasSelectedContext.innerHTML = "";
+          return;
+        }
+
+        dasSelectedContext.innerHTML = `
+          <span class="context-pill"><strong>Equipment:</strong> ${escapeHtml(adapter.equipment)}</span>
+          <span class="context-pill"><strong>Equipment Key:</strong> ${escapeHtml(adapter.equipmentKey)}</span>
+          <span class="context-pill"><strong>Source ID:</strong> ${escapeHtml(adapter.sourceId)}</span>
+          <span class="context-pill"><strong>Address:</strong> ${escapeHtml(adapter.address)}</span>
+        `;
+      }
+
+      function renderDasReadValuesTable() {
+        const query = dasDetailSearch.value.trim().toLowerCase();
+        const selectedState = dasDetailStateFilter.value;
+
+        const filteredRows = dasReadValuesData.filter((row) => {
+          const searchable = `${row.tag} ${row.sourceId} ${row.numericValue} ${row.stringValue}`.toLowerCase();
+          const matchesText = !query || searchable.includes(query);
+          const matchesState = !selectedState || row.state.toLowerCase() === selectedState;
+          return matchesText && matchesState;
+        });
+
+        dasReadValuesBody.innerHTML = "";
+
+        filteredRows.forEach((row, index) => {
+          const tableRow = document.createElement("tr");
+          tableRow.innerHTML = `
+            <td>
+              <button type="button" class="row-refresh-btn" data-row-index="${index}" aria-label="Refresh row">
+                <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+                  <path d="M12 4a8 8 0 0 1 7.32 4.78 1 1 0 1 1-1.84.78A6 6 0 1 0 17 15h-2a1 1 0 1 1 0-2h4a1 1 0 0 1 1 1v4a1 1 0 1 1-2 0v-1.28A8 8 0 1 1 12 4Z" />
+                </svg>
+              </button>
+            </td>
+            <td class="tag-text">${highlightTagKey(row.tag)}</td>
+            <td>${escapeHtml(row.sourceId)}</td>
+            <td><span class="read-state-badge">${escapeHtml(row.state)}</span></td>
+            <td>${escapeHtml(row.flags)}</td>
+            <td>${escapeHtml(row.timestamp)}</td>
+            <td>${escapeHtml(row.tagOrder)}</td>
+            <td>${escapeHtml(row.numericValue)}</td>
+            <td class="string-value-cell">${escapeHtml(row.stringValue)}</td>
+          `;
+
+          dasReadValuesBody.appendChild(tableRow);
+        });
+
+        dasDetailClear.hidden = !query;
+
+        Array.from(dasReadValuesBody.querySelectorAll(".row-refresh-btn")).forEach((button) => {
+          button.addEventListener("click", () => {
+            renderDasReadValuesTable();
+          });
+        });
+      }
+
+      function showDasAdaptersMainView() {
+        dasAdaptersMainView.hidden = false;
+        dasAdapterDetailsView.hidden = true;
+      }
+
+      function showDasAdapterDetailsView(adapter) {
+        selectedDasAdapter = adapter;
+        dasAdaptersMainView.hidden = true;
+        dasAdapterDetailsView.hidden = false;
+        dasDetailSearch.value = "";
+        dasDetailStateFilter.value = "";
+        renderSelectedAdapterContext(selectedDasAdapter);
+        renderDasReadValuesTable();
+      }
+
+      function renderDasAdaptersTable() {
+        const query = dasAdaptersSearch.value.trim().toLowerCase();
+
+        const filteredRows = dasAdaptersData.filter((row) => {
+          const searchableText = [
+            row.equipment,
+            row.equipmentKey,
+            row.address,
+            row.type,
+            row.sourceId,
+            row.status,
+            row.tagsInError,
+            row.errorMessage
+          ]
+            .join(" ")
+            .toLowerCase();
+          return !query || searchableText.includes(query);
+        });
+
+        const sortedRows = [...filteredRows].sort((left, right) => {
+          const leftValue = getDasCellValue(left, dasSortState.key);
+          const rightValue = getDasCellValue(right, dasSortState.key);
+
+          if (leftValue < rightValue) {
+            return dasSortState.direction === "asc" ? -1 : 1;
+          }
+          if (leftValue > rightValue) {
+            return dasSortState.direction === "asc" ? 1 : -1;
+          }
+          return 0;
+        });
+
+        dasAdaptersBody.innerHTML = "";
+
+        sortedRows.forEach((row) => {
+          const parsedTags = parseTagsError(row.tagsInError);
+          const tableRow = document.createElement("tr");
+          const hasTagErrors = parsedTags.failed > 0;
+          if (parsedTags.failed > 0) {
+            tableRow.classList.add("row-in-error");
+          }
+
+          const isSelected = selectedDasAdapter && selectedDasAdapter.sourceId === row.sourceId && selectedDasAdapter.equipmentKey === row.equipmentKey;
+          if (isSelected) {
+            tableRow.classList.add("row-selected");
+          }
+
+          const tagsCellClass = hasTagErrors ? "tags-cell tags-cell-error" : "tags-cell tags-cell-ok";
+          const tagsMarkup = `<span class="tags-failed-count">${parsedTags.failed}</span><span class="tags-divider">/</span><span class="tags-total-count">${parsedTags.total}</span>`;
+
+          tableRow.innerHTML = `
+            <td class="info-col"><button type="button" class="row-info-icon das-row-open" title="Open adapter details" aria-label="Open adapter details">i</button></td>
+            <td>${row.equipment}</td>
+            <td>${row.equipmentKey}</td>
+            <td>${row.address}</td>
+            <td>${row.type}</td>
+            <td>${row.sourceId}</td>
+            <td>${dasStatusBadge(row.status)}</td>
+            <td class="${tagsCellClass}">${tagsMarkup}</td>
+            <td>${row.errorMessage}</td>
+          `;
+
+          tableRow.querySelector(".das-row-open").addEventListener("click", () => {
+            showDasAdapterDetailsView(row);
+          });
+
+          dasAdaptersBody.appendChild(tableRow);
+        });
+      }
+
+      function applyDasSort(sortKey) {
+        if (dasSortState.key === sortKey) {
+          dasSortState.direction = dasSortState.direction === "asc" ? "desc" : "asc";
+        } else {
+          dasSortState.key = sortKey;
+          dasSortState.direction = "asc";
+        }
+
+        dasSortButtons.forEach((button) => {
+          const parentHeader = button.closest("th");
+          const isActive = button.dataset.sortKey === dasSortState.key;
+          button.classList.toggle("active", isActive);
+
+          if (!parentHeader) {
+            return;
+          }
+
+          if (isActive) {
+            parentHeader.setAttribute("aria-sort", dasSortState.direction === "asc" ? "ascending" : "descending");
+          } else {
+            parentHeader.setAttribute("aria-sort", "none");
+          }
+        });
+
+        renderDasAdaptersTable();
+      }
+
       function escapeCsv(value) {
         const text = String(value ?? "");
         return `"${text.replaceAll('"', '""')}"`;
@@ -572,14 +1532,55 @@
       function showMonitoringFeature() {
         accountMonitoringEmptySection.hidden = true;
         monitoringFeatureSection.hidden = false;
+        ssmFeatureSection.hidden = true;
+        connectivityFeatureSection.hidden = true;
+        dasValidationSection.hidden = true;
         monitoringFeatureSection.scrollIntoView({ behavior: "smooth", block: "start" });
       }
 
       function showAccountMonitoringEmptyPage() {
         monitoringFeatureSection.hidden = true;
+        ssmFeatureSection.hidden = true;
+        connectivityFeatureSection.hidden = true;
+        dasValidationSection.hidden = true;
         accountMonitoringEmptySection.hidden = false;
         loadAccountMonitoringData(accountMonitoringSearch.value);
         accountMonitoringEmptySection.scrollIntoView({ behavior: "smooth", block: "start" });
+      }
+
+      function showSsmFeature() {
+        monitoringFeatureSection.hidden = true;
+        accountMonitoringEmptySection.hidden = true;
+        connectivityFeatureSection.hidden = true;
+        dasValidationSection.hidden = true;
+        ssmFeatureSection.hidden = false;
+        switchSsmTab("custom");
+        if (!ssmResultOutput.innerHTML) {
+          runSsmCommand();
+        }
+        ssmFeatureSection.scrollIntoView({ behavior: "smooth", block: "start" });
+      }
+
+      function showConnectivityFeature() {
+        monitoringFeatureSection.hidden = true;
+        accountMonitoringEmptySection.hidden = true;
+        ssmFeatureSection.hidden = true;
+        dasValidationSection.hidden = true;
+        connectivityFeatureSection.hidden = false;
+        switchConnectivityTab("machines");
+        renderConnectivityTable();
+        connectivityFeatureSection.scrollIntoView({ behavior: "smooth", block: "start" });
+      }
+
+      function showDasValidationFeature() {
+        monitoringFeatureSection.hidden = true;
+        accountMonitoringEmptySection.hidden = true;
+        ssmFeatureSection.hidden = true;
+        connectivityFeatureSection.hidden = true;
+        dasValidationSection.hidden = false;
+        showDasAdaptersMainView();
+        renderDasAdaptersTable();
+        dasValidationSection.scrollIntoView({ behavior: "smooth", block: "start" });
       }
 
       monitoringToggle.addEventListener("click", () => {
@@ -599,12 +1600,20 @@
         showAccountMonitoringEmptyPage();
       });
 
+      ssmLink.addEventListener("click", (event) => {
+        event.preventDefault();
+        showSsmFeature();
+      });
+
+      connectivityCheckLink.addEventListener("click", (event) => {
+        event.preventDefault();
+        showConnectivityFeature();
+      });
+
       [
         systemInformationLink,
         logsLink,
-        dasValidationLink,
         restartLink,
-        connectivityCheckLink,
         networkLink,
         edgeDeviceMonitoringLink
       ].forEach((submenuLink) => {
@@ -612,6 +1621,11 @@
           event.preventDefault();
           showMonitoringFeature();
         });
+      });
+
+      dasValidationLink.addEventListener("click", (event) => {
+        event.preventDefault();
+        showDasValidationFeature();
       });
 
       Object.values(filterElements).forEach((element) => {
@@ -625,12 +1639,76 @@
       });
       accountTabService.addEventListener("click", () => setAccountTab("service"));
       accountTabReadkit.addEventListener("click", () => setAccountTab("readkit"));
+      dasAdaptersSearch.addEventListener("input", renderDasAdaptersTable);
+      dasDetailSearch.addEventListener("input", renderDasReadValuesTable);
+      dasDetailStateFilter.addEventListener("change", renderDasReadValuesTable);
+      dasDetailClear.addEventListener("click", () => {
+        dasDetailSearch.value = "";
+        renderDasReadValuesTable();
+        dasDetailSearch.focus();
+      });
+      ssmTabCustom.addEventListener("click", () => switchSsmTab("custom"));
+      ssmTabPredefined.addEventListener("click", () => switchSsmTab("predefined"));
+      connectivityTabInternet.addEventListener("click", () => switchConnectivityTab("internet"));
+      connectivityTabMachines.addEventListener("click", () => switchConnectivityTab("machines"));
+      connectivityDatasetRadios.forEach((radio) => {
+        radio.addEventListener("change", renderConnectivityTable);
+      });
+      connectivityAddAddressButton.addEventListener("click", addMockConnectivityAddress);
+      connectivityCheckAllButton.addEventListener("click", mockCheckAllConnections);
+      connectivitySortButtons.forEach((button) => {
+        button.addEventListener("click", () => {
+          applyConnectivitySort(button.dataset.sortKey);
+        });
+      });
+      ssmStartCommand.addEventListener("click", runSsmCommand);
+      ssmPredefButtons.forEach((button) => {
+        button.addEventListener("click", () => {
+          ssmCommandInput.value = button.dataset.command;
+          switchSsmTab("custom");
+        });
+      });
+      ssmCopyOutput.addEventListener("click", async () => {
+        if (!ssmLastPlainOutput) {
+          return;
+        }
+        try {
+          await navigator.clipboard.writeText(ssmLastPlainOutput);
+          ssmCopyOutput.textContent = "Copied";
+          window.setTimeout(() => {
+            ssmCopyOutput.textContent = "Copy";
+          }, 1200);
+        } catch {
+          ssmCopyOutput.textContent = "Copy failed";
+          window.setTimeout(() => {
+            ssmCopyOutput.textContent = "Copy";
+          }, 1200);
+        }
+      });
+      ssmExpandOutput.addEventListener("click", () => {
+        const expanded = ssmResultOutput.classList.toggle("expanded");
+        ssmExpandOutput.textContent = expanded ? "Collapse" : "Expand";
+      });
+      dasDetailRefresh.addEventListener("click", () => {
+        renderDasReadValuesTable();
+      });
+      dasDetailsBackButton.addEventListener("click", () => {
+        showDasAdaptersMainView();
+        renderDasAdaptersTable();
+      });
+      dasSortButtons.forEach((button) => {
+        button.addEventListener("click", () => {
+          applyDasSort(button.dataset.sortKey);
+        });
+      });
 
       downloadVisibleCsvButton.addEventListener("click", downloadVisibleRowsAsCsv);
 
       applyFilters();
       loadAccountMonitoringData("");
       setAccountTab("service");
+      applyDasSort("equipment");
+      applyConnectivitySort("equipment");
     </script>
   </body>
 </html>
