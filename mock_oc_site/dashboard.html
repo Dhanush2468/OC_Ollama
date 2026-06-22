@@ -789,6 +789,36 @@
           port: "102"
         },
         {
+          dataset: "media",
+          status: "failed",
+          equipment: "Labeler ERGOMODUL 2E",
+          kNumber: "KR52777",
+          uuid: "a1f1fd65-5a35-4d78-bbb1-f26cc6df1c11",
+          sourceId: "a1f1fd65-5a35-4d78-bbb1-f26cc6df1c11_media_opc",
+          ip: "172.26.73.24",
+          port: "4840"
+        },
+        {
+          dataset: "media",
+          status: "success",
+          equipment: "Inspection CHECKMAT 900",
+          kNumber: "KR52778",
+          uuid: "5ce7170c-2501-4134-9e9e-6fbf4de9a101",
+          sourceId: "5ce7170c-2501-4134-9e9e-6fbf4de9a101_media_gateway",
+          ip: "172.26.73.25",
+          port: "55005"
+        },
+        {
+          dataset: "media",
+          status: "failed",
+          equipment: "Packer VARIOPAC L2",
+          kNumber: "KR52779",
+          uuid: "5dbf0ec4-c84f-44b8-a02f-aab339ce2f17",
+          sourceId: "5dbf0ec4-c84f-44b8-a02f-aab339ce2f17_media_main",
+          ip: "172.26.73.27",
+          port: "102"
+        },
+        {
           dataset: "das-configs",
           status: "failed",
           equipment: "Inspektor CHECKMAT 731",
@@ -816,6 +846,36 @@
           uuid: "f8b6a0c6-af85-4514-b7c7-f258674f4f7e",
           sourceId: "f8b6a0c6-af85-4514-b7c7-f258674f4f7e_das_gateway",
           ip: "172.26.73.36",
+          port: "102"
+        },
+        {
+          dataset: "das-configs",
+          status: "failed",
+          equipment: "Blow Molder CONTIFORM 06",
+          kNumber: "KR52780",
+          uuid: "9f4ab5df-d7f5-4b79-aaaf-1cb27fc44a6e",
+          sourceId: "9f4ab5df-d7f5-4b79-aaaf-1cb27fc44a6e_das_cfg",
+          ip: "172.26.73.40",
+          port: "4840"
+        },
+        {
+          dataset: "das-configs",
+          status: "success",
+          equipment: "Filler MODULFILL 4B",
+          kNumber: "KR52781",
+          uuid: "35b7f76c-83ce-4840-a3a8-254f91d36668",
+          sourceId: "35b7f76c-83ce-4840-a3a8-254f91d36668_das_gateway",
+          ip: "172.26.73.41",
+          port: "55005"
+        },
+        {
+          dataset: "das-configs",
+          status: "failed",
+          equipment: "Tunnel Pasteur PASTEUR-3",
+          kNumber: "KR52782",
+          uuid: "1f558da9-a862-4f97-8f2c-90f31f857097",
+          sourceId: "1f558da9-a862-4f97-8f2c-90f31f857097_das_ws",
+          ip: "172.26.73.42",
           port: "102"
         }
       ];
@@ -1207,9 +1267,7 @@
       }
 
       function mockCheckAllConnections() {
-        connectivityRows.forEach((row) => {
-          row.status = "success";
-        });
+        // Preserve current connectivity states; action acts as a refresh only.
         renderConnectivityTable();
       }
 

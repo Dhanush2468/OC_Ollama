@@ -71,12 +71,37 @@ def _run_once(config_path: str) -> int:
 
                 # Customers that reached final outcome classification and require NOC reporting.
                 if status == "investigated" and outcome.startswith("NOC Report"):
+                    account_evidence = str(item.get("evidence_account_monitoring_screenshot", "")).strip()
+                    account_service_evidence = str(
+                        item.get("evidence_account_monitoring_service_status_screenshot", "")
+                    ).strip()
+                    account_das_service_evidence = str(
+                        item.get("evidence_account_monitoring_das_service_status_screenshot", "")
+                    ).strip()
+                    das_all_rows_evidence = str(item.get("evidence_das_validation_all_rows_screenshot", "")).strip()
+                    das_evidence = str(item.get("evidence_das_validation_screenshot", "")).strip()
+                    das_source_id_match = item.get("evidence_das_validation_source_id_match")
+                    observed_source_ids_raw = item.get("evidence_das_validation_observed_source_ids", [])
+                    observed_source_ids = (
+                        [str(value).strip() for value in observed_source_ids_raw if str(value).strip()]
+                        if isinstance(observed_source_ids_raw, list)
+                        else []
+                    )
                     noc_report_customers.append(
                         {
                             "customer_name": customer_name,
                             "outcome": outcome,
                             "machine_ip": str(item.get("machine_ip", "")).strip(),
                             "adapter_id": str(item.get("adapter_id", "")).strip(),
+                            "evidence": {
+                                "account_monitoring_datapoints_screenshot": account_evidence,
+                                "account_monitoring_service_status_screenshot": account_service_evidence,
+                                "account_monitoring_das_service_status_screenshot": account_das_service_evidence,
+                                "das_validation_all_rows_screenshot": das_all_rows_evidence,
+                                "das_validation_endpoints_screenshot": das_evidence,
+                                "das_validation_source_id_match": das_source_id_match,
+                                "das_validation_observed_source_ids": observed_source_ids,
+                            },
                         }
                     )
 

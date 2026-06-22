@@ -546,6 +546,15 @@ async def _run_workflow_async(config: MonitorConfig, run_id: str, timestamp: str
             machine_ip = ""
             matched_datapoints: list[str] = []
             error_datapoints: list[str] = []
+            account_monitoring_evidence_screenshot = ""
+            account_monitoring_service_status_evidence_screenshot = ""
+            account_monitoring_das_service_status_evidence_screenshot = ""
+            account_monitoring_service_status_source_id = ""
+            account_monitoring_das_service_status_source_id = ""
+            das_validation_evidence_screenshot = ""
+            das_validation_all_rows_evidence_screenshot = ""
+            das_validation_observed_source_ids: list[str] = []
+            das_validation_source_id_match: bool | None = None
 
             shot_prefix = Path(config.paths.screenshots_dir) / f"{run_id}-{customer_name.replace(' ', '-')[:40]}"
 
@@ -573,6 +582,91 @@ async def _run_workflow_async(config: MonitorConfig, run_id: str, timestamp: str
 
                 await page.wait_for_timeout(400)
                 await page.screenshot(path=str(shot_prefix) + "-details.png", full_page=True)
+
+                # Evidence capture: explicitly capture Service Status and DAS Service Status major rows.
+                account_monitoring_evidence_path = str(shot_prefix) + "-account-monitoring-evidence.png"
+                try:
+                    await _click_any(page, ["#account-tab-service", "text=Service Status"], timeout_ms)
+                    await page.wait_for_timeout(200)
+
+                    async def _capture_account_row(label: str, suffix: str) -> tuple[str, str]:
+                        rows = page.locator("#account-status-body tr")
+                        row_count = await rows.count()
+                        for row_index in range(row_count):
+                            row = rows.nth(row_index)
+                            try:
+                                row_label = (await row.locator("td").first.inner_text(timeout=timeout_ms)).strip().lower()
+                            except Exception:
+                                continue
+                            if row_label != label.lower():
+                                continue
+                            try:
+                                await row.hover(timeout=timeout_ms)
+                            except Exception:
+                                await row.click(timeout=timeout_ms)
+                            await page.wait_for_timeout(200)
+                            output_path = str(shot_prefix) + f"-account-monitoring-{suffix}-evidence.png"
+                            await page.screenshot(path=output_path, full_page=True)
+                            details_text = ""
+                            try:
+                                details_text = await page.locator("#account-error-details").inner_text(timeout=timeout_ms)
+                            except Exception:
+                                details_text = ""
+                            source_id = _extract_adapter_id(details_text)
+                            return output_path, source_id
+                        return "", ""
+
+                    (
+                        account_monitoring_service_status_evidence_screenshot,
+                        account_monitoring_service_status_source_id,
+                    ) = await _capture_account_row(
+                        "Service status",
+                        "service-status",
+                    )
+                    (
+                        account_monitoring_das_service_status_evidence_screenshot,
+                        account_monitoring_das_service_status_source_id,
+                    ) = await _capture_account_row(
+                        "DAS service status",
+                        "das-service-status",
+                    )
+
+                    account_monitoring_evidence_screenshot = (
+                        account_monitoring_service_status_evidence_screenshot
+                        or account_monitoring_das_service_status_evidence_screenshot
+                    )
+
+                    if not account_monitoring_evidence_screenshot:
+                        await page.screenshot(path=account_monitoring_evidence_path, full_page=True)
+                        account_monitoring_evidence_screenshot = account_monitoring_evidence_path
+
+                    await page.wait_for_timeout(200)
+                    steps.append(
+                        StepResult(
+                            name="capture_account_monitoring_evidence",
+                            status=(
+                                "ok"
+                                if account_monitoring_service_status_evidence_screenshot
+                                and account_monitoring_das_service_status_evidence_screenshot
+                                else "partial"
+                            ),
+                            details=(
+                                "Captured Service Status and DAS Service Status evidence"
+                                if account_monitoring_service_status_evidence_screenshot
+                                and account_monitoring_das_service_status_evidence_screenshot
+                                else "Captured partial Account Monitoring evidence"
+                            ),
+                            screenshot=account_monitoring_evidence_screenshot,
+                        )
+                    )
+                except Exception as evidence_exc:
+                    steps.append(
+                        StepResult(
+                            name="capture_account_monitoring_evidence",
+                            status="failed",
+                            details=str(evidence_exc),
+                        )
+                    )
 
                 log_step("Executing Step 11-14: validate status, service status, adapter ID, datapoints")
                 _ = await page.inner_text("body")
@@ -608,6 +702,13 @@ async def _run_workflow_async(config: MonitorConfig, run_id: str, timestamp: str
                             machine_ip=machine_ip,
                             matched_datapoints=matched_datapoints,
                             error_datapoints=error_datapoints,
+                            evidence_account_monitoring_screenshot=account_monitoring_evidence_screenshot,
+                            evidence_account_monitoring_service_status_screenshot=account_monitoring_service_status_evidence_screenshot,
+                            evidence_account_monitoring_das_service_status_screenshot=account_monitoring_das_service_status_evidence_screenshot,
+                            evidence_das_validation_screenshot=das_validation_evidence_screenshot,
+                            evidence_das_validation_all_rows_screenshot=das_validation_all_rows_evidence_screenshot,
+                            evidence_das_validation_observed_source_ids=das_validation_observed_source_ids,
+                            evidence_das_validation_source_id_match=das_validation_source_id_match,
                             outcome=outcome,
                             steps=steps,
                         )
@@ -618,13 +719,21 @@ async def _run_workflow_async(config: MonitorConfig, run_id: str, timestamp: str
 
                 await page.wait_for_timeout(350)
                 body_after_service = await page.inner_text("body")
-                adapter_id = _extract_adapter_id(body_after_service)
+                adapter_id = (
+                    account_monitoring_service_status_source_id
+                    or account_monitoring_das_service_status_source_id
+                    or _extract_adapter_id(body_after_service)
+                )
                 datapoints = _extract_datapoints(body_after_service)
                 steps.append(
                     StepResult(
                         name="capture_adapter_and_datapoints",
                         status="ok" if adapter_id else "partial",
-                        details=f"adapter_id={adapter_id or 'not_found'}, datapoints={len(datapoints)}",
+                        details=(
+                            f"adapter_id={adapter_id or 'not_found'}, datapoints={len(datapoints)}, "
+                            f"service_row_source_id={account_monitoring_service_status_source_id or 'n/a'}, "
+                            f"das_service_row_source_id={account_monitoring_das_service_status_source_id or 'n/a'}"
+                        ),
                     )
                 )
 
@@ -640,9 +749,42 @@ async def _run_workflow_async(config: MonitorConfig, run_id: str, timestamp: str
                         _ = await _fill_search(page, adapter_id, timeout_ms)
 
                 await page.wait_for_timeout(300)
-                # Open adapter details (mock uses explicit info button)
-                await _click_any(page, [".das-row-open", "text=i"], timeout_ms)
+                # Open adapter details for matching adapter row whenever available.
+                opened_details = False
+                if adapter_id:
+                    opened_details = await _click_any(
+                        page,
+                        [
+                            f"#das-adapters-body tr:has-text('{adapter_id}') .das-row-open",
+                            f"tr:has-text('{adapter_id}') .das-row-open",
+                        ],
+                        timeout_ms,
+                    )
+                if not opened_details:
+                    await _click_any(page, [".das-row-open", "text=i"], timeout_ms)
                 await page.wait_for_timeout(250)
+
+                das_validation_all_rows_evidence_path = str(shot_prefix) + "-das-validation-all-rows-evidence.png"
+                try:
+                    await page.screenshot(path=das_validation_all_rows_evidence_path, full_page=True)
+                    das_validation_all_rows_evidence_screenshot = das_validation_all_rows_evidence_path
+                    steps.append(
+                        StepResult(
+                            name="capture_das_validation_all_rows_evidence",
+                            status="ok",
+                            details="Captured DAS validation with all rows before filtering",
+                            screenshot=das_validation_all_rows_evidence_path,
+                        )
+                    )
+                except Exception as evidence_exc:
+                    steps.append(
+                        StepResult(
+                            name="capture_das_validation_all_rows_evidence",
+                            status="failed",
+                            details=str(evidence_exc),
+                        )
+                    )
+
                 try:
                     await page.select_option("#das-detail-state-filter", value="error", timeout=timeout_ms)
                 except Exception:
@@ -657,6 +799,57 @@ async def _run_workflow_async(config: MonitorConfig, run_id: str, timestamp: str
                     error_datapoints = [item.strip() for item in tag_cells if item.strip()]
                 except Exception:
                     error_datapoints = _extract_datapoints(das_text)
+
+                try:
+                    source_cells = await page.locator("#das-read-values-body tr td:nth-child(3)").all_inner_texts()
+                    source_ids = sorted({str(item).strip() for item in source_cells if str(item).strip()})
+                    das_validation_observed_source_ids = source_ids
+                    if adapter_id:
+                        das_validation_source_id_match = adapter_id.lower() in {item.lower() for item in source_ids}
+                    steps.append(
+                        StepResult(
+                            name="validate_das_source_id_match",
+                            status=(
+                                "ok"
+                                if (das_validation_source_id_match is True or not adapter_id)
+                                else "failed"
+                            ),
+                            details=(
+                                f"expected={adapter_id or 'n/a'}, observed={','.join(source_ids) or 'none'}"
+                            ),
+                        )
+                    )
+                except Exception as source_id_exc:
+                    steps.append(
+                        StepResult(
+                            name="validate_das_source_id_match",
+                            status="failed",
+                            details=str(source_id_exc),
+                        )
+                    )
+
+                das_validation_evidence_path = str(shot_prefix) + "-das-validation-evidence.png"
+                try:
+                    await page.wait_for_timeout(200)
+                    await page.screenshot(path=das_validation_evidence_path, full_page=True)
+                    das_validation_evidence_screenshot = das_validation_evidence_path
+                    steps.append(
+                        StepResult(
+                            name="capture_das_validation_evidence",
+                            status="ok",
+                            details="Captured DAS validation endpoints/datapoints evidence",
+                            screenshot=das_validation_evidence_path,
+                        )
+                    )
+                except Exception as evidence_exc:
+                    steps.append(
+                        StepResult(
+                            name="capture_das_validation_evidence",
+                            status="failed",
+                            details=str(evidence_exc),
+                        )
+                    )
+
                 if ref_points:
                     log_step("Executing LLM validation gate: compare error datapoints with reference list")
                     try:
@@ -690,6 +883,13 @@ async def _run_workflow_async(config: MonitorConfig, run_id: str, timestamp: str
                                 machine_ip=machine_ip,
                                 matched_datapoints=matched_datapoints,
                                 error_datapoints=error_datapoints,
+                                evidence_account_monitoring_screenshot=account_monitoring_evidence_screenshot,
+                                evidence_account_monitoring_service_status_screenshot=account_monitoring_service_status_evidence_screenshot,
+                                evidence_account_monitoring_das_service_status_screenshot=account_monitoring_das_service_status_evidence_screenshot,
+                                evidence_das_validation_screenshot=das_validation_evidence_screenshot,
+                                evidence_das_validation_all_rows_screenshot=das_validation_all_rows_evidence_screenshot,
+                                evidence_das_validation_observed_source_ids=das_validation_observed_source_ids,
+                                evidence_das_validation_source_id_match=das_validation_source_id_match,
                                 outcome=outcome,
                                 steps=steps,
                             )
@@ -755,6 +955,13 @@ async def _run_workflow_async(config: MonitorConfig, run_id: str, timestamp: str
                             machine_ip=machine_ip,
                             matched_datapoints=matched_datapoints,
                             error_datapoints=error_datapoints,
+                            evidence_account_monitoring_screenshot=account_monitoring_evidence_screenshot,
+                            evidence_account_monitoring_service_status_screenshot=account_monitoring_service_status_evidence_screenshot,
+                            evidence_account_monitoring_das_service_status_screenshot=account_monitoring_das_service_status_evidence_screenshot,
+                            evidence_das_validation_screenshot=das_validation_evidence_screenshot,
+                            evidence_das_validation_all_rows_screenshot=das_validation_all_rows_evidence_screenshot,
+                            evidence_das_validation_observed_source_ids=das_validation_observed_source_ids,
+                            evidence_das_validation_source_id_match=das_validation_source_id_match,
                             outcome=outcome,
                             steps=steps,
                         )
@@ -795,6 +1002,13 @@ async def _run_workflow_async(config: MonitorConfig, run_id: str, timestamp: str
                         machine_ip=machine_ip,
                         matched_datapoints=matched_datapoints,
                         error_datapoints=error_datapoints,
+                        evidence_account_monitoring_screenshot=account_monitoring_evidence_screenshot,
+                        evidence_account_monitoring_service_status_screenshot=account_monitoring_service_status_evidence_screenshot,
+                        evidence_account_monitoring_das_service_status_screenshot=account_monitoring_das_service_status_evidence_screenshot,
+                        evidence_das_validation_screenshot=das_validation_evidence_screenshot,
+                        evidence_das_validation_all_rows_screenshot=das_validation_all_rows_evidence_screenshot,
+                        evidence_das_validation_observed_source_ids=das_validation_observed_source_ids,
+                        evidence_das_validation_source_id_match=das_validation_source_id_match,
                         outcome=outcome,
                         steps=steps,
                     )
@@ -815,6 +1029,13 @@ async def _run_workflow_async(config: MonitorConfig, run_id: str, timestamp: str
                         machine_ip=machine_ip,
                         matched_datapoints=matched_datapoints,
                         error_datapoints=error_datapoints,
+                        evidence_account_monitoring_screenshot=account_monitoring_evidence_screenshot,
+                        evidence_account_monitoring_service_status_screenshot=account_monitoring_service_status_evidence_screenshot,
+                        evidence_account_monitoring_das_service_status_screenshot=account_monitoring_das_service_status_evidence_screenshot,
+                        evidence_das_validation_screenshot=das_validation_evidence_screenshot,
+                        evidence_das_validation_all_rows_screenshot=das_validation_all_rows_evidence_screenshot,
+                        evidence_das_validation_observed_source_ids=das_validation_observed_source_ids,
+                        evidence_das_validation_source_id_match=das_validation_source_id_match,
                         outcome="Execution Error",
                         steps=steps,
                     )

@@ -52,6 +52,13 @@ class CustomerInvestigationResult:
     machine_ip: str = ""
     matched_datapoints: list[str] | None = None
     error_datapoints: list[str] | None = None
+    evidence_account_monitoring_screenshot: str = ""
+    evidence_account_monitoring_service_status_screenshot: str = ""
+    evidence_account_monitoring_das_service_status_screenshot: str = ""
+    evidence_das_validation_screenshot: str = ""
+    evidence_das_validation_all_rows_screenshot: str = ""
+    evidence_das_validation_observed_source_ids: list[str] | None = None
+    evidence_das_validation_source_id_match: bool | None = None
     outcome: str = ""
     steps: list[StepResult] | None = None
 
