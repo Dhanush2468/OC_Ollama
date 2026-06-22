@@ -62,6 +62,24 @@ def _run_once(config_path: str) -> int:
             with open(findings_path, "w", encoding="utf-8") as file:
                 json.dump(payload, file, indent=2)
 
+            results = payload.get("results", [])
+            noc_report_customers = []
+            for item in results:
+                status = str(item.get("status", "")).strip().lower()
+                outcome = str(item.get("outcome", "")).strip()
+                customer_name = str(item.get("customer_name", "")).strip()
+
+                # Customers that reached final outcome classification and require NOC reporting.
+                if status == "investigated" and outcome.startswith("NOC Report"):
+                    noc_report_customers.append(
+                        {
+                            "customer_name": customer_name,
+                            "outcome": outcome,
+                            "machine_ip": str(item.get("machine_ip", "")).strip(),
+                            "adapter_id": str(item.get("adapter_id", "")).strip(),
+                        }
+                    )
+
             summary_path = Path(config.paths.findings_dir) / "summary.json"
             with open(summary_path, "w", encoding="utf-8") as file:
                 json.dump(
@@ -72,6 +90,8 @@ def _run_once(config_path: str) -> int:
                         "customers_in_window": int(payload.get("customers_in_window", 0)),
                         "investigated_customers": int(payload.get("investigated_customers", 0)),
                         "downloaded_csv": str(payload.get("downloaded_csv", "")),
+                        "noc_report_count": len(noc_report_customers),
+                        "noc_report_customers": noc_report_customers,
                     },
                     file,
                     indent=2,

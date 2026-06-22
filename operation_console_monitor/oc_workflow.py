@@ -9,6 +9,7 @@ from dataclasses import asdict
 from datetime import datetime, timedelta
 from pathlib import Path
 from typing import Iterable
+from urllib import request
 
 from .config import MonitorConfig
 from .models import CustomerInvestigationResult, OCWorkflowReport, StepResult
@@ -276,6 +277,92 @@ def _find_latest_download(download_dir: str, glob_expr: str) -> str:
         raise FileNotFoundError(f"No downloaded files found in {download_dir} matching {glob_expr}")
     latest = max(candidates, key=lambda item: item.stat().st_mtime)
     return str(latest)
+
+
+def _llm_datapoint_match(
+    config: MonitorConfig,
+    error_datapoints: list[str],
+    reference_datapoints: set[str],
+) -> tuple[bool, list[str], str]:
+    if not reference_datapoints:
+        return True, [], "No reference datapoints configured"
+
+    if not error_datapoints:
+        return False, [], "No error datapoints found under error state"
+
+    schema = {
+        "type": "object",
+        "properties": {
+            "is_match": {"type": "boolean"},
+            "matched_error_datapoints": {
+                "type": "array",
+                "items": {"type": "string"},
+            },
+            "reason": {"type": "string"},
+        },
+        "required": ["is_match", "matched_error_datapoints", "reason"],
+    }
+
+    ref_sorted = sorted(reference_datapoints)
+    prompt = (
+        "Compare operation-console datapoints. "
+        "Return JSON only, matching schema. "
+        "Set is_match=true only when error datapoints belong to the provided reference list.\n\n"
+        "Reference datapoints:\n"
+        + "\n".join(f"- {item}" for item in ref_sorted)
+        + "\n\nError-state datapoints:\n"
+        + "\n".join(f"- {item}" for item in error_datapoints)
+    )
+
+    payload = {
+        "model": config.ollama.model,
+        "messages": [
+            {"role": "system", "content": "You are a strict JSON generator."},
+            {"role": "user", "content": prompt},
+        ],
+        "stream": False,
+        "format": schema,
+        "options": {"temperature": 0},
+    }
+
+    url = f"{config.ollama.base_url.rstrip('/')}/api/chat"
+    req = request.Request(
+        url,
+        data=json.dumps(payload).encode("utf-8"),
+        headers={"Content-Type": "application/json"},
+        method="POST",
+    )
+
+    with request.urlopen(req, timeout=config.ollama.timeout_seconds) as response:
+        body = json.loads(response.read().decode("utf-8"))
+
+    content = body.get("message", {}).get("content", "{}")
+    parsed = json.loads(content) if isinstance(content, str) else {}
+
+    matched_raw = parsed.get("matched_error_datapoints", [])
+    if not isinstance(matched_raw, list):
+        matched_raw = []
+
+    error_lookup = {item.strip().lower(): item.strip() for item in error_datapoints if item.strip()}
+    matched = [
+        error_lookup.get(str(item).strip().lower(), str(item).strip())
+        for item in matched_raw
+        if str(item).strip()
+    ]
+
+    # Keep stable ordering and unique values.
+    seen: set[str] = set()
+    matched_ordered: list[str] = []
+    for item in matched:
+        key = item.lower()
+        if key in seen:
+            continue
+        seen.add(key)
+        matched_ordered.append(item)
+
+    is_match = bool(parsed.get("is_match", False))
+    reason = str(parsed.get("reason", "Ollama datapoint decision completed")).strip()
+    return is_match, matched_ordered, reason
 
 
 async def _run_workflow_async(config: MonitorConfig, run_id: str, timestamp: str) -> dict:
@@ -571,15 +658,27 @@ async def _run_workflow_async(config: MonitorConfig, run_id: str, timestamp: str
                 except Exception:
                     error_datapoints = _extract_datapoints(das_text)
                 if ref_points:
-                    matched_datapoints = [point for point in error_datapoints if point.lower() in ref_points]
-                    if not matched_datapoints:
+                    log_step("Executing LLM validation gate: compare error datapoints with reference list")
+                    try:
+                        is_match, matched_datapoints, llm_reason = _llm_datapoint_match(
+                            config=config,
+                            error_datapoints=error_datapoints,
+                            reference_datapoints=ref_points,
+                        )
+                    except Exception as llm_exc:
+                        # Fallback preserves workflow continuity if local Ollama is temporarily unavailable.
+                        matched_datapoints = [point for point in error_datapoints if point.lower() in ref_points]
+                        is_match = bool(matched_datapoints)
+                        llm_reason = f"Ollama unavailable, used exact-match fallback: {llm_exc}"
+
+                    if not is_match:
                         status = "skipped"
                         outcome = "Skipped - Not Eligible (Datapoint mismatch)"
                         steps.append(
                             StepResult(
                                 name="datapoint_match_check",
                                 status="failed",
-                                details="No error datapoint matched reference list",
+                                details=llm_reason,
                             )
                         )
                         results.append(
@@ -597,7 +696,21 @@ async def _run_workflow_async(config: MonitorConfig, run_id: str, timestamp: str
                         )
                         log_phase(f"Phase B completed for '{customer_name}' with status: {status}")
                         continue
-                steps.append(StepResult(name="datapoint_match_check", status="ok", details="Matched or no reference file"))
+                    steps.append(
+                        StepResult(
+                            name="datapoint_match_check",
+                            status="ok",
+                            details=llm_reason,
+                        )
+                    )
+                else:
+                    steps.append(
+                        StepResult(
+                            name="datapoint_match_check",
+                            status="ok",
+                            details="No reference file configured; LLM gate skipped",
+                        )
+                    )
 
                 log_phase("Phase C started: connectivity verification and outcome decision")
                 log_step("Executing Step 20-25: fetch machine IP and run ping via SSM")
