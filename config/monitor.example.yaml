@@ -1,4 +1,5 @@
 operation_console_url: "http://127.0.0.1:4173"
+execution_mode: "monitor" # monitor | oc_workflow
 
 preflight:
   enabled: true
@@ -30,8 +31,19 @@ ollama:
 analysis:
   max_findings: 5
 
+oc_workflow:
+  window_hours: 24
+  timestamp_column: "timestamp"
+  customer_column: "customer"
+  max_customers_per_run: 50
+  downloaded_csv_glob: "*.csv"
+  datapoints_reference_file: ""
+  login_wait_seconds: 90
+  step_timeout_seconds: 12
+
 paths:
   screenshots_dir: "./output/screenshots"
   findings_dir: "./output/findings"
   logs_dir: "./output/logs"
   page_capture_dir: "./output/logs/page_captures"
+  downloads_dir: "./output/downloads"

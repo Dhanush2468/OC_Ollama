@@ -1,0 +1,85 @@
+{
+  "run_id": "2026-06-22-120000-positive",
+  "timestamp": "2026-06-22T12:00:00",
+  "console_url": "http://127.0.0.1:4173",
+  "downloaded_csv": "output/downloads/2026-06-22-120000-edge-device-monitoring-2026-06-22T11-59-00.000Z.csv",
+  "window_hours": 24,
+  "customers_in_window": 1,
+  "investigated_customers": 1,
+  "results": [
+    {
+      "customer_name": "NorthStar Telecom",
+      "timestamp_iso": "2026-06-22T11:47:12",
+      "status": "investigated",
+      "adapter_id": "adp-7c21f4",
+      "machine_ip": "10.24.18.77",
+      "matched_datapoints": [
+        "DP_DAS_LINK_STATUS",
+        "DP_EDGE_HEARTBEAT"
+      ],
+      "error_datapoints": [
+        "DP_DAS_LINK_STATUS",
+        "DP_EDGE_HEARTBEAT"
+      ],
+      "outcome": "NOC Report - Onsite Issue",
+      "steps": [
+        {
+          "name": "search_customer",
+          "status": "ok",
+          "details": "NorthStar Telecom",
+          "screenshot": ""
+        },
+        {
+          "name": "validate_ed_status",
+          "status": "ok",
+          "details": "Proceed",
+          "screenshot": ""
+        },
+        {
+          "name": "capture_adapter_and_datapoints",
+          "status": "ok",
+          "details": "adapter_id=adp-7c21f4, datapoints=2",
+          "screenshot": ""
+        },
+        {
+          "name": "datapoint_match_check",
+          "status": "ok",
+          "details": "Matched or no reference file",
+          "screenshot": ""
+        },
+        {
+          "name": "ping_check",
+          "status": "ok",
+          "details": "ping -c3 10.24.18.77",
+          "screenshot": ""
+        },
+        {
+          "name": "connectivity_check",
+          "status": "ok",
+          "details": "NOC Report - Onsite Issue",
+          "screenshot": ""
+        }
+      ]
+    }
+  ],
+  "phase_logs": [
+    "[PHASE] Phase A started: login + monitoring extraction",
+    "[STEP] Executing Step 2: SSO sign in",
+    "[STEP] Executing Step 3-4: open Monitoring and apply required filters",
+    "[STEP] Executing Step 5-6: download Monitoring CSV",
+    "[STEP] Downloaded CSV detected: output/downloads/2026-06-22-120000-edge-device-monitoring-2026-06-22T11-59-00.000Z.csv",
+    "[STEP] Executing Step 7-8: filter customers in 24-hour window and prepare loop list",
+    "[PHASE] Phase A completed: selected 1 customer(s) for investigation loop",
+    "[PHASE] Phase B started: customer loop 1/1 for 'NorthStar Telecom'",
+    "[STEP] Executing Step 9-10: open Monitoring account view and search customer",
+    "[STEP] Executing Step 11-14: validate status, service status, adapter ID, datapoints",
+    "[STEP] Executing Step 15-19: open DAS Validation and filter error state",
+    "[PHASE] Phase C started: connectivity verification and outcome decision",
+    "[STEP] Executing Step 20-25: fetch machine IP and run ping via SSM",
+    "[STEP] Executing Step 26-28: connectivity check and classify outcome",
+    "[PHASE] Phase C completed for 'NorthStar Telecom' with outcome: NOC Report - Onsite Issue",
+    "[PHASE] Phase B completed for 'NorthStar Telecom' with status: investigated",
+    "[PHASE] Workflow execution completed, browser context closed"
+  ],
+  "errors": []
+}

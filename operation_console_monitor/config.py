@@ -47,21 +47,36 @@ class AnalysisConfig:
 
 
 @dataclass
+class OCWorkflowConfig:
+    window_hours: int = 24
+    timestamp_column: str = "timestamp"
+    customer_column: str = "customer"
+    max_customers_per_run: int = 50
+    downloaded_csv_glob: str = "*.csv"
+    datapoints_reference_file: str = ""
+    login_wait_seconds: int = 90
+    step_timeout_seconds: int = 12
+
+
+@dataclass
 class PathsConfig:
     screenshots_dir: str = "./output/screenshots"
     findings_dir: str = "./output/findings"
     logs_dir: str = "./output/logs"
     page_capture_dir: str = "./output/logs/page_captures"
+    downloads_dir: str = "./output/downloads"
 
 
 @dataclass
 class MonitorConfig:
     operation_console_url: str
+    execution_mode: str
     preflight: PreflightConfig
     schedule: ScheduleConfig
     skyvern: SkyvernConfig
     ollama: OllamaConfig
     analysis: AnalysisConfig
+    oc_workflow: OCWorkflowConfig
     paths: PathsConfig
 
 
@@ -84,11 +99,13 @@ def load_config(path: str) -> MonitorConfig:
 
     config = MonitorConfig(
         operation_console_url=raw.get("operation_console_url", "http://127.0.0.1:4173"),
+        execution_mode=str(raw.get("execution_mode", "monitor")),
         preflight=_merge_dataclass(PreflightConfig, raw.get("preflight")),
         schedule=_merge_dataclass(ScheduleConfig, raw.get("schedule")),
         skyvern=_merge_dataclass(SkyvernConfig, raw.get("skyvern")),
         ollama=_merge_dataclass(OllamaConfig, raw.get("ollama")),
         analysis=_merge_dataclass(AnalysisConfig, raw.get("analysis")),
+        oc_workflow=_merge_dataclass(OCWorkflowConfig, raw.get("oc_workflow")),
         paths=_merge_dataclass(PathsConfig, raw.get("paths")),
     )
     return config
@@ -100,6 +117,7 @@ def ensure_output_directories(config: MonitorConfig) -> None:
         config.paths.findings_dir,
         config.paths.logs_dir,
         config.paths.page_capture_dir,
+        config.paths.downloads_dir,
     ]
     for directory in dirs:
         Path(directory).mkdir(parents=True, exist_ok=True)

@@ -10,6 +10,7 @@ from urllib import request
 from .config import ensure_output_directories, load_config
 from .logging_utils import build_logger
 from .models import Finding, MonitoringReport
+from .oc_workflow import run_oc_workflow
 from .ollama_analysis import analyze_page
 from .skyvern_capture import capture_console_page
 
@@ -54,6 +55,33 @@ def _run_once(config_path: str) -> int:
     logger.info("Starting monitor run %s", run_id)
     if not _wait_for_console(config, logger):
         return 1
+
+    if str(config.execution_mode).strip().lower() == "oc_workflow":
+        try:
+            payload = run_oc_workflow(config=config, run_id=run_id, timestamp=timestamp)
+            with open(findings_path, "w", encoding="utf-8") as file:
+                json.dump(payload, file, indent=2)
+
+            summary_path = Path(config.paths.findings_dir) / "summary.json"
+            with open(summary_path, "w", encoding="utf-8") as file:
+                json.dump(
+                    {
+                        "run_id": run_id,
+                        "timestamp": timestamp,
+                        "execution_mode": "oc_workflow",
+                        "customers_in_window": int(payload.get("customers_in_window", 0)),
+                        "investigated_customers": int(payload.get("investigated_customers", 0)),
+                        "downloaded_csv": str(payload.get("downloaded_csv", "")),
+                    },
+                    file,
+                    indent=2,
+                )
+            logger.info("OC workflow run completed: %s", findings_path)
+            print(findings_path)
+            return 0
+        except Exception as exc:
+            logger.exception("OC workflow run failed: %s", exc)
+            return 1
 
     try:
         capture_result = capture_console_page(config, screenshot_path, page_capture_path)

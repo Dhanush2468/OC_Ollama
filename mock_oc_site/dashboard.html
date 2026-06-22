@@ -869,6 +869,9 @@
         edgeStreamIngest: "083be8f5-e5be-4d10-88a7-7d9a56da8bc8"
       };
 
+      // Keep one deterministic happy-path customer for end-to-end workflow validation.
+      const positiveCustomerName = "Acme Telecom";
+
       const sharedFailedTagNames = [
         "WS_Cur_Mach_Spd",
         "WS_Cur_State",
@@ -946,6 +949,7 @@
 
       const accountMonitoringData = edgeRows.map((item, index) => {
         const serviceProblem = toProblemStatus(item.edServiceStatus);
+        const isPositiveCustomer = item.customerName === positiveCustomerName;
         return {
           customerName: item.customerName,
           overallStatus: serviceProblem,
@@ -954,6 +958,9 @@
           readykitStatus: item.edStatus,
           edStatus: item.edStatus,
           serviceStatus: serviceProblem,
+          kopStatus: isPositiveCustomer ? "OK" : normalizeToOkOrError(serviceProblem),
+          rkStatus: isPositiveCustomer ? "OK" : normalizeToOkOrError(item.edStatus),
+          edGateStatus: isPositiveCustomer ? "OK" : normalizeToOkOrError(item.edStatus),
           rows: buildAccountRowsFromEdge(item)
         };
       });
@@ -973,9 +980,9 @@
 
       function renderReadkitStatus(selectedAccount) {
         const rows = [
-          ["KOP Status", normalizeToOkOrError(selectedAccount.serviceStatus)],
-          ["RK Status", normalizeToOkOrError(selectedAccount.readykitStatus)],
-          ["ED Status", normalizeToOkOrError(selectedAccount.edStatus)]
+          ["KOP Status", selectedAccount.kopStatus || normalizeToOkOrError(selectedAccount.serviceStatus)],
+          ["RK Status", selectedAccount.rkStatus || normalizeToOkOrError(selectedAccount.readykitStatus)],
+          ["ED Status", selectedAccount.edGateStatus || normalizeToOkOrError(selectedAccount.edStatus)]
         ];
 
         readkitStatusBody.innerHTML = "";
@@ -1201,7 +1208,7 @@
 
       function mockCheckAllConnections() {
         connectivityRows.forEach((row) => {
-          row.status = Math.random() < 0.72 ? "success" : "failed";
+          row.status = "success";
         });
         renderConnectivityTable();
       }
