@@ -668,7 +668,7 @@
           type: "OPC UA",
           sourceId: "92bc3ae0-ccec-4d6d-9ecf-89495e28fd78",
           status: "Faulted",
-          tagsInError: "5/661",
+          tagsInError: "4/661",
           errorMessage: "TransportDrop: Gateway timeout"
         },
         {
@@ -863,6 +863,28 @@
         }
       ];
 
+      const accountMonitorSourceIds = {
+        serviceStatus: "92bc3ae0-ccec-4d6d-9ecf-89495e28fd78",
+        dasServiceStatus: "1d3d3cf8-6539-427e-89ea-d7881237fd5a",
+        edgeStreamIngest: "083be8f5-e5be-4d10-88a7-7d9a56da8bc8"
+      };
+
+      const sharedFailedTagNames = [
+        "WS_Cur_Mach_Spd",
+        "WS_Cur_State",
+        "WS_Mach_Design_Spd",
+        "WS_Set_Mach_Spd"
+      ];
+
+      function buildFailureDetails(sourceId, tagCount) {
+        const selectedTags = sharedFailedTagNames.slice(0, Math.max(1, tagCount));
+        return {
+          failedAdapterSourceId: sourceId,
+          failedTagsCount: selectedTags.length,
+          tagList: selectedTags.join(", ")
+        };
+      }
+
       function extractLastSeen(statusText) {
         const marker = "Last Seen:";
         const index = statusText.indexOf(marker);
@@ -887,21 +909,13 @@
             component: "Service status",
             status: serviceProblem,
             lastStatusChange: lastSeen,
-            details: {
-              failedAdapterSourceId: `src-${edgeRow.customerName.toLowerCase().replaceAll(" ", "-")}`,
-              failedTagsCount: 4,
-              tagList: "WS_Cur_State, KRO_Prod_Typ, WS_Cur_Mode, Edge_Sync_State"
-            }
+            details: buildFailureDetails(accountMonitorSourceIds.serviceStatus, 4)
           },
           {
             component: "DAS service status",
             status: serviceProblem,
             lastStatusChange: lastSeen,
-            details: {
-              failedAdapterSourceId: `das-${edgeRow.lineNumber.toLowerCase()}`,
-              failedTagsCount: 3,
-              tagList: "DAS_Queue_Depth, DAS_Write_Lag, DAS_Conn_State"
-            }
+            details: buildFailureDetails(accountMonitorSourceIds.dasServiceStatus, 3)
           },
           {
             component: "Datapoint to cloud latency",
@@ -912,11 +926,7 @@
             component: "Edge Stream Ingest",
             status: edgeIngestStatus,
             lastStatusChange: lastSeen,
-            details: {
-              failedAdapterSourceId: `ingest-${edgeRow.edServiceName.toLowerCase().replaceAll(" ", "-")}`,
-              failedTagsCount: 2,
-              tagList: "WS_Cur_State, KRO_Prod_Typ"
-            }
+            details: buildFailureDetails(accountMonitorSourceIds.edgeStreamIngest, 2)
           }
         ];
       }
@@ -1337,7 +1347,12 @@
         const query = dasDetailSearch.value.trim().toLowerCase();
         const selectedState = dasDetailStateFilter.value;
 
-        const filteredRows = dasReadValuesData.filter((row) => {
+        const scopedRows = dasReadValuesData.map((row) => ({
+          ...row,
+          sourceId: selectedDasAdapter ? selectedDasAdapter.sourceId : row.sourceId
+        }));
+
+        const filteredRows = scopedRows.filter((row) => {
           const searchable = `${row.tag} ${row.sourceId} ${row.numericValue} ${row.stringValue}`.toLowerCase();
           const matchesText = !query || searchable.includes(query);
           const matchesState = !selectedState || row.state.toLowerCase() === selectedState;
