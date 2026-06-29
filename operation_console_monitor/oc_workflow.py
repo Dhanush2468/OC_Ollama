@@ -4,6 +4,7 @@ import asyncio
 import csv
 import json
 import logging
+import os
 import re
 from dataclasses import asdict
 from datetime import datetime, timedelta
@@ -15,6 +16,9 @@ from .config import MonitorConfig
 from .models import CustomerInvestigationResult, OCWorkflowReport, StepResult
 
 
+# -----------------------------------------------------------------------------
+# Time parsing utilities
+# -----------------------------------------------------------------------------
 TIME_FORMATS = (
     "%Y-%m-%d %H:%M:%S",
     "%Y-%m-%d %H:%M",
@@ -24,6 +28,7 @@ TIME_FORMATS = (
 )
 
 
+# Parse mixed timestamp formats seen across real/mock CSV exports.
 def _parse_time(raw: str) -> datetime | None:
     text = (raw or "").strip()
     if not text:
@@ -45,6 +50,7 @@ def _parse_time(raw: str) -> datetime | None:
         return None
 
 
+# Load reference datapoints from .txt or .json for validation gating.
 def _load_reference_datapoints(path: str) -> set[str]:
     if not path:
         return set()
@@ -67,6 +73,10 @@ def _load_reference_datapoints(path: str) -> set[str]:
     return points
 
 
+# -----------------------------------------------------------------------------
+# CSV customer selection helpers
+# -----------------------------------------------------------------------------
+# Select unique customers whose records fall inside the configured time window.
 def _customers_from_csv(
     csv_path: str,
     timestamp_column: str,
@@ -120,6 +130,7 @@ def _customers_from_csv(
     return customers
 
 
+# Fallback selector used when strict time-window filtering returns nothing.
 def _customers_from_csv_no_window(
     csv_path: str,
     timestamp_column: str,
@@ -165,6 +176,10 @@ def _customers_from_csv_no_window(
     return customers
 
 
+# -----------------------------------------------------------------------------
+# Playwright interaction helpers
+# -----------------------------------------------------------------------------
+# Click by matching visible text with several selector strategies.
 async def _click_text(page, text: str, timeout_ms: int) -> bool:
     selectors = [
         f"text={text}",
@@ -185,6 +200,7 @@ async def _click_text(page, text: str, timeout_ms: int) -> bool:
     return False
 
 
+# Click first available selector from a candidate list.
 async def _click_any(page, selectors: list[str], timeout_ms: int) -> bool:
     for selector in selectors:
         try:
@@ -198,6 +214,7 @@ async def _click_any(page, selectors: list[str], timeout_ms: int) -> bool:
     return False
 
 
+# Fill common search boxes and submit with Enter.
 async def _fill_search(page, query: str, timeout_ms: int) -> bool:
     selectors = [
         "input[type='search']",
@@ -218,6 +235,7 @@ async def _fill_search(page, query: str, timeout_ms: int) -> bool:
     return False
 
 
+# Open a filter and apply one or more option labels.
 async def _apply_filter(page, filter_name: str, option_labels: Iterable[str], timeout_ms: int) -> bool:
     if not await _click_text(page, filter_name, timeout_ms):
         return False
@@ -229,6 +247,9 @@ async def _apply_filter(page, filter_name: str, option_labels: Iterable[str], ti
     return applied_any
 
 
+# -----------------------------------------------------------------------------
+# Text extraction helpers
+# -----------------------------------------------------------------------------
 def _extract_datapoints(text: str) -> list[str]:
     # Best-effort parse for datapoint-like tokens across different OC layouts.
     tokens = re.findall(r"[A-Za-z][A-Za-z0-9_./:-]{2,}", text or "")
@@ -279,6 +300,26 @@ def _find_latest_download(download_dir: str, glob_expr: str) -> str:
     return str(latest)
 
 
+# -----------------------------------------------------------------------------
+# Environment and decision helpers
+# -----------------------------------------------------------------------------
+def _env_flag_enabled(name: str) -> bool:
+    return str(os.getenv(name, "")).strip().lower() in {"1", "true", "yes", "on"}
+
+
+def _resolve_start_step() -> int:
+    step_1_enabled = _env_flag_enabled("STEP_1")
+    step_2_enabled = _env_flag_enabled("STEP_2")
+
+    if step_1_enabled and step_2_enabled:
+        raise ValueError("Invalid start configuration: only one of STEP_1 or STEP_2 can be true")
+
+    if step_2_enabled:
+        return 2
+    return 1
+
+
+# LLM-based datapoint decision used in eligibility checks.
 def _llm_datapoint_match(
     config: MonitorConfig,
     error_datapoints: list[str],
@@ -365,6 +406,10 @@ def _llm_datapoint_match(
     return is_match, matched_ordered, reason
 
 
+# -----------------------------------------------------------------------------
+# Main OC workflow execution
+# -----------------------------------------------------------------------------
+# Runs phase A/B/C automation and returns a serializable workflow report.
 async def _run_workflow_async(config: MonitorConfig, run_id: str, timestamp: str) -> dict:
     try:
         from playwright.async_api import async_playwright
@@ -376,6 +421,7 @@ async def _run_workflow_async(config: MonitorConfig, run_id: str, timestamp: str
     logger = logging.getLogger("operation_console_monitor")
     timeout_ms = max(1, config.oc_workflow.step_timeout_seconds) * 1000
     ref_points = _load_reference_datapoints(config.oc_workflow.datapoints_reference_file)
+    start_step = _resolve_start_step()
     phase_logs: list[str] = []
     captured_errors: list[str] = []
 
@@ -395,6 +441,7 @@ async def _run_workflow_async(config: MonitorConfig, run_id: str, timestamp: str
         phase_logs.append(line)
         logger.error(line)
 
+    # Step 1: Open browser context and load operation console URL.
     async with async_playwright() as playwright:
         browser = await playwright.chromium.launch(
             headless=config.skyvern.headless,
@@ -415,7 +462,7 @@ async def _run_workflow_async(config: MonitorConfig, run_id: str, timestamp: str
             timeout=config.skyvern.navigation_timeout_seconds * 1000,
         )
 
-        log_phase("Phase A started: login + monitoring extraction")
+        log_phase(f"Workflow start configured with STEP_{start_step}=true")
 
         # Step 2: Sign in path.
         log_step("Executing Step 2: SSO sign in")
@@ -439,104 +486,144 @@ async def _run_workflow_async(config: MonitorConfig, run_id: str, timestamp: str
             except Exception:
                 pass
 
-        # Step 3 + 4: Monitoring and filters.
-        log_step("Executing Step 3-4: open Monitoring and apply required filters")
-        await _click_any(page, ["#monitoring-toggle", "text=Monitoring", "text=Montoring"], timeout_ms)
-        await page.wait_for_timeout(300)
+        downloaded_csv = ""
+        customers: list[tuple[str, str]] = []
 
-        # Mock-specific deterministic filters first.
-        try:
-            await page.select_option("#filter-ed-status", value="OK", timeout=timeout_ms)
-        except Exception:
-            _ = await _apply_filter(page, "ED Status", ["OK"], timeout_ms)
+        # Phase A: Optional login/filter/download path when starting at STEP_1.
+        if start_step == 1:
+            log_phase("Phase A started: login + monitoring extraction")
 
-        # Mock has Major/Minor/Ignore; Critical may not exist there.
-        try:
-            await page.select_option("#filter-ed-service-status", value="Major", timeout=timeout_ms)
-        except Exception:
-            _ = await _apply_filter(page, "ED Service Status", ["Major", "Critical"], timeout_ms)
+            # Step 3 + 4: Monitoring and filters.
+            log_step("Executing Step 3-4: open Monitoring and apply required filters")
+            await _click_any(page, ["#monitoring-toggle", "text=Monitoring", "text=Montoring"], timeout_ms)
+            await page.wait_for_timeout(300)
 
-        try:
-            await page.select_option("#filter-ed-condition", value="Subscription and Smart COM", timeout=timeout_ms)
-        except Exception:
-            _ = await _apply_filter(page, "ED Condition", ["Subscription", "Smart COM"], timeout_ms)
+            # Mock-specific deterministic filters first.
+            try:
+                await page.select_option("#filter-ed-status", value="OK", timeout=timeout_ms)
+            except Exception:
+                _ = await _apply_filter(page, "ED Status", ["OK"], timeout_ms)
 
-        # Step 5 + 6: Download CSV.
-        log_step("Executing Step 5-6: download Monitoring CSV")
-        download_success = False
-        try:
-            async with page.expect_download(timeout=max(timeout_ms, 30000)) as dl_info:
-                if not await _click_any(
-                    page,
-                    [
-                        "#download-visible-csv",
-                        "button[aria-label*='Download']",
-                        "[title*='Download']",
-                        "text=Download",
-                    ],
-                    timeout_ms,
-                ):
-                    raise RuntimeError("Download button not found")
-            download = await dl_info.value
-            download_target = Path(config.paths.downloads_dir) / f"{run_id}-{download.suggested_filename}"
-            await download.save_as(str(download_target))
-            download_success = True
-        except Exception:
-            pass
+            # Mock has Major/Minor/Ignore; Critical may not exist there.
+            try:
+                await page.select_option("#filter-ed-service-status", value="Major", timeout=timeout_ms)
+            except Exception:
+                _ = await _apply_filter(page, "ED Service Status", ["Major", "Critical"], timeout_ms)
 
-        if not download_success:
-            # Fallback selectors for icon-only buttons.
-            for selector in [
-                "button[aria-label*='Download']",
-                "[title*='Download']",
-                "[data-testid*='download']",
-            ]:
-                try:
-                    async with page.expect_download(timeout=max(timeout_ms, 30000)) as dl_info:
-                        await page.locator(selector).first.click(timeout=timeout_ms)
-                    download = await dl_info.value
-                    download_target = Path(config.paths.downloads_dir) / f"{run_id}-{download.suggested_filename}"
-                    await download.save_as(str(download_target))
-                    download_success = True
-                    break
-                except Exception:
-                    continue
+            try:
+                await page.select_option("#filter-ed-condition", value="Subscription and Smart COM", timeout=timeout_ms)
+            except Exception:
+                _ = await _apply_filter(page, "ED Condition", ["Subscription", "Smart COM"], timeout_ms)
 
-        if not download_success:
-            log_error("Failed to download monitoring CSV from OC")
-            raise RuntimeError("Failed to download monitoring CSV from OC")
+            # Step 5 + 6: Download CSV.
+            log_step("Executing Step 5-6: download Monitoring CSV")
+            download_success = False
+            try:
+                async with page.expect_download(timeout=max(timeout_ms, 30000)) as dl_info:
+                    if not await _click_any(
+                        page,
+                        [
+                            "#download-visible-csv",
+                            "button[aria-label*='Download']",
+                            "[title*='Download']",
+                            "text=Download",
+                        ],
+                        timeout_ms,
+                    ):
+                        raise RuntimeError("Download button not found")
+                download = await dl_info.value
+                download_target = Path(config.paths.downloads_dir) / f"{run_id}-{download.suggested_filename}"
+                await download.save_as(str(download_target))
+                download_success = True
+            except Exception:
+                pass
 
-        downloaded_csv = _find_latest_download(
-            config.paths.downloads_dir,
-            config.oc_workflow.downloaded_csv_glob,
-        )
-        log_step(f"Downloaded CSV detected: {downloaded_csv}")
+            if not download_success:
+                # Fallback selectors for icon-only buttons.
+                for selector in [
+                    "button[aria-label*='Download']",
+                    "[title*='Download']",
+                    "[data-testid*='download']",
+                ]:
+                    try:
+                        async with page.expect_download(timeout=max(timeout_ms, 30000)) as dl_info:
+                            await page.locator(selector).first.click(timeout=timeout_ms)
+                        download = await dl_info.value
+                        download_target = Path(config.paths.downloads_dir) / f"{run_id}-{download.suggested_filename}"
+                        await download.save_as(str(download_target))
+                        download_success = True
+                        break
+                    except Exception:
+                        continue
 
-        log_step("Executing Step 7-8: filter customers in 24-hour window and prepare loop list")
-        customers = _customers_from_csv(
-            csv_path=downloaded_csv,
-            timestamp_column=config.oc_workflow.timestamp_column,
-            customer_column=config.oc_workflow.customer_column,
-            window_hours=config.oc_workflow.window_hours,
-            max_customers=config.oc_workflow.max_customers_per_run,
-        )
+            if not download_success:
+                log_error("Failed to download monitoring CSV from OC")
+                raise RuntimeError("Failed to download monitoring CSV from OC")
 
-        if not customers:
-            fallback_customers = _customers_from_csv_no_window(
+            downloaded_csv = _find_latest_download(
+                config.paths.downloads_dir,
+                config.oc_workflow.downloaded_csv_glob,
+            )
+            log_step(f"Downloaded CSV detected: {downloaded_csv}")
+
+            log_step("Executing Step 7-8: filter customers in 24-hour window and prepare loop list")
+            customers = _customers_from_csv(
                 csv_path=downloaded_csv,
                 timestamp_column=config.oc_workflow.timestamp_column,
                 customer_column=config.oc_workflow.customer_column,
+                window_hours=config.oc_workflow.window_hours,
                 max_customers=config.oc_workflow.max_customers_per_run,
             )
-            customers = fallback_customers
-            warning_line = (
-                "No customers found in strict 24-hour window; using fallback list from CSV without window filter."
+
+            if not customers:
+                fallback_customers = _customers_from_csv_no_window(
+                    csv_path=downloaded_csv,
+                    timestamp_column=config.oc_workflow.timestamp_column,
+                    customer_column=config.oc_workflow.customer_column,
+                    max_customers=config.oc_workflow.max_customers_per_run,
+                )
+                customers = fallback_customers
+                warning_line = (
+                    "No customers found in strict 24-hour window; using fallback list from CSV without window filter."
+                )
+                phase_logs.append(f"[WARN] {warning_line}")
+                logger.warning("[WARN] %s", warning_line)
+
+            log_phase(f"Phase A completed: selected {len(customers)} customer(s) for investigation loop")
+        else:
+            # Phase A skip path: consume existing CSV and continue with investigation loop.
+            log_phase("Phase A skipped: STEP_2=true, using an already downloaded CSV")
+            downloaded_csv = _find_latest_download(
+                config.paths.downloads_dir,
+                config.oc_workflow.downloaded_csv_glob,
             )
-            phase_logs.append(f"[WARN] {warning_line}")
-            logger.warning("[WARN] %s", warning_line)
+            log_step(f"Using provided CSV for Step 2 start: {downloaded_csv}")
+            log_step("Executing Step 7-8: filter customers in 24-hour window and prepare loop list")
+            customers = _customers_from_csv(
+                csv_path=downloaded_csv,
+                timestamp_column=config.oc_workflow.timestamp_column,
+                customer_column=config.oc_workflow.customer_column,
+                window_hours=config.oc_workflow.window_hours,
+                max_customers=config.oc_workflow.max_customers_per_run,
+            )
 
-        log_phase(f"Phase A completed: selected {len(customers)} customer(s) for investigation loop")
+            if not customers:
+                fallback_customers = _customers_from_csv_no_window(
+                    csv_path=downloaded_csv,
+                    timestamp_column=config.oc_workflow.timestamp_column,
+                    customer_column=config.oc_workflow.customer_column,
+                    max_customers=config.oc_workflow.max_customers_per_run,
+                )
+                customers = fallback_customers
+                warning_line = (
+                    "No customers found in strict 24-hour window; using fallback list from CSV without window filter."
+                )
+                phase_logs.append(f"[WARN] {warning_line}")
+                logger.warning("[WARN] %s", warning_line)
 
+            log_phase(f"Phase B entry: selected {len(customers)} customer(s) for investigation loop")
+
+        # Phase B/C: Per-customer investigation and outcome classification.
         results: list[CustomerInvestigationResult] = []
         for index, (customer_name, customer_ts) in enumerate(customers, start=1):
             steps: list[StepResult] = []
@@ -1045,6 +1132,7 @@ async def _run_workflow_async(config: MonitorConfig, run_id: str, timestamp: str
         await browser.close()
         log_phase("Workflow execution completed, browser context closed")
 
+    # Build final report payload consumed by orchestrator exports.
     report = OCWorkflowReport(
         run_id=run_id,
         timestamp=timestamp,
@@ -1060,5 +1148,6 @@ async def _run_workflow_async(config: MonitorConfig, run_id: str, timestamp: str
     return report.to_dict()
 
 
+# Synchronous wrapper for CLI and orchestrator callers.
 def run_oc_workflow(config: MonitorConfig, run_id: str, timestamp: str) -> dict:
     return asyncio.run(_run_workflow_async(config, run_id, timestamp))

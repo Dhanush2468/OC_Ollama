@@ -6,7 +6,13 @@
 - Ollama installed
 - Local Operation Console running (default config: `http://127.0.0.1:4173`)
 
-## 2. Setup (from project root)
+## 2. Setup (from agent project root)
+
+Run all commands below from `oc/agent` unless noted otherwise.
+
+```bash
+cd agent
+```
 
 ```bash
 python3 -m venv .venv
@@ -32,7 +38,8 @@ Edit `config/monitor.yaml` and set:
 If you want to use the included minimal OC-like website:
 
 ```bash
-python -m http.server 4173 --directory mock_oc_site
+chmod +x run_local
+./run_local
 ```
 
 ## 3. Start Ollama + pull model
@@ -49,16 +56,33 @@ Pull model once (internet needed only first time):
 ollama pull qwen2.5vl:7b
 ```
 
+
+python3 -m http.server 4173 --directory agent/mock_oc_site
+
+
+
 ## 4. Run one monitoring cycle
 
 ```bash
 python -m operation_console_monitor.orchestrator --config config/monitor.yaml
 ```
 
+If you are staying in workspace root (`oc`), use:
+
+```bash
+PYTHONPATH=agent python -m operation_console_monitor.orchestrator --config agent/config/monitor.yaml
+```
+
 ## 5. Run scheduled monitoring (continuous)
 
 ```bash
 python -m operation_console_monitor.scheduler --config config/monitor.yaml
+```
+
+If you are staying in workspace root (`oc`), use:
+
+```bash
+PYTHONPATH=agent python -m operation_console_monitor.scheduler --config agent/config/monitor.yaml
 ```
 
 Notes:

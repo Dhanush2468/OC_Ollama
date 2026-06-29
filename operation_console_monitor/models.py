@@ -3,6 +3,10 @@ from __future__ import annotations
 from dataclasses import asdict, dataclass
 
 
+# -----------------------------------------------------------------------------
+# Monitoring report models
+# -----------------------------------------------------------------------------
+# Single issue item produced by model analysis.
 @dataclass
 class Finding:
     timestamp: str
@@ -29,12 +33,14 @@ class MonitoringReport:
     page_capture_html: str
     degraded_screenshots: list[str]
 
+    # Serialize nested dataclasses to plain dictionaries for JSON output.
     def to_dict(self) -> dict:
         report = asdict(self)
         report["findings"] = [asdict(item) for item in self.findings]
         return report
 
 
+# Workflow step-level execution trace for each investigated customer.
 @dataclass
 class StepResult:
     name: str
@@ -63,6 +69,7 @@ class CustomerInvestigationResult:
     steps: list[StepResult] | None = None
 
 
+# Top-level output structure for oc_workflow mode.
 @dataclass
 class OCWorkflowReport:
     run_id: str
@@ -76,5 +83,6 @@ class OCWorkflowReport:
     phase_logs: list[str] | None = None
     errors: list[str] | None = None
 
+    # Convert full workflow report to a JSON-friendly dictionary.
     def to_dict(self) -> dict:
         return asdict(self)

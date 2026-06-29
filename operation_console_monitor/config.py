@@ -7,6 +7,10 @@ from typing import Any
 import yaml
 
 
+# -----------------------------------------------------------------------------
+# Config models
+# -----------------------------------------------------------------------------
+# Runtime preflight checks before browser automation starts.
 @dataclass
 class PreflightConfig:
     enabled: bool = True
@@ -80,6 +84,7 @@ class MonitorConfig:
     paths: PathsConfig
 
 
+# Build dataclass instances by merging user values over defaults.
 def _merge_dataclass(cls: type[Any], data: dict[str, Any] | None) -> Any:
     values = data or {}
     merged: dict[str, Any] = {}
@@ -93,6 +98,7 @@ def _merge_dataclass(cls: type[Any], data: dict[str, Any] | None) -> Any:
     return cls(**merged)
 
 
+# Step 1: Load YAML config and resolve nested config blocks.
 def load_config(path: str) -> MonitorConfig:
     with open(path, "r", encoding="utf-8") as file:
         raw = yaml.safe_load(file) or {}
@@ -111,6 +117,7 @@ def load_config(path: str) -> MonitorConfig:
     return config
 
 
+# Step 2: Ensure all output folders exist before any write operation.
 def ensure_output_directories(config: MonitorConfig) -> None:
     dirs = [
         config.paths.screenshots_dir,

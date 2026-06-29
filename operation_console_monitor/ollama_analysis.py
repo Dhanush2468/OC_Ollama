@@ -8,6 +8,10 @@ from urllib import request
 from .config import MonitorConfig
 
 
+# -----------------------------------------------------------------------------
+# Ollama response schema and fallbacks
+# -----------------------------------------------------------------------------
+# Schema used to enforce deterministic JSON output from the model.
 def _build_schema(max_findings: int) -> dict:
     return {
         "type": "object",
@@ -46,6 +50,7 @@ def _build_schema(max_findings: int) -> dict:
     }
 
 
+# Safe fallback used when model output is malformed or missing.
 def _fallback_summary() -> dict:
     return {
         "overall_status": "unknown",
@@ -55,6 +60,10 @@ def _fallback_summary() -> dict:
     }
 
 
+# -----------------------------------------------------------------------------
+# Main analysis pipeline
+# -----------------------------------------------------------------------------
+# Sends page context and optional screenshots to Ollama and returns parsed JSON.
 def analyze_page(
     config: MonitorConfig,
     screenshot_paths: list[str],
@@ -63,8 +72,10 @@ def analyze_page(
     page_html: str,
     degraded_views: list[dict] | None = None,
 ) -> dict:
+    # Step 1: Build strict JSON schema for current max-findings limit.
     schema = _build_schema(config.analysis.max_findings)
 
+    # Step 2: Prepare compact context from dashboard and degraded detail views.
     html_excerpt = (page_html or "")[: config.ollama.max_page_content_chars]
     degraded_views = degraded_views or []
     service_names = [str(view.get("service_name", "")).strip() for view in degraded_views if view.get("service_name")]
@@ -86,6 +97,7 @@ def analyze_page(
         )
 
     detail_context = "\n\n".join(detail_blocks)
+    # Step 3: Build user prompt with main page and detail-view context.
     prompt = (
         "You are monitoring an operation console. "
         "Return concise JSON matching the schema. "
@@ -99,6 +111,7 @@ def analyze_page(
         f"Degraded detail context:\n{detail_context}"
     )
 
+    # Step 4: Optionally attach screenshots for multimodal reasoning.
     user_message: dict = {"role": "user", "content": prompt}
     images = []
     if config.ollama.vision_enabled:
@@ -110,6 +123,7 @@ def analyze_page(
     if images:
         user_message["images"] = images
 
+    # Step 5: Execute Ollama chat request using non-streaming JSON mode.
     payload = {
         "model": config.ollama.model,
         "messages": [
@@ -134,6 +148,7 @@ def analyze_page(
     with request.urlopen(req, timeout=config.ollama.timeout_seconds) as response:
         body = json.loads(response.read().decode("utf-8"))
 
+    # Step 6: Parse, normalize, and return safe analysis structure.
     try:
         raw_content = body["message"]["content"]
         parsed = json.loads(raw_content)

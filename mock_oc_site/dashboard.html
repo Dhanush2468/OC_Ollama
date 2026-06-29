@@ -929,8 +929,192 @@
         edgeStreamIngest: "083be8f5-e5be-4d10-88a7-7d9a56da8bc8"
       };
 
+      const csvMockRows = [
+        {
+          edServiceStatus: "minor",
+          edCondition: "Smart Com Only",
+          customerName: "SORGENTI TOSCANE S.R.L.",
+          lineNames: "PET Line 32.000 bph @ 1,5l still",
+          lastStatusChange: "June 28, 2026 at 12:46:14 PM"
+        },
+        {
+          edServiceStatus: "major",
+          edCondition: "Smart Com Only",
+          customerName: "Erimez Kardag Dogal Kaynak Suyu",
+          lineNames: "Ergobloc LM 45000bph@0,5l still Karadag",
+          lastStatusChange: "June 27, 2026 at 1:29:37 PM"
+        },
+        {
+          edServiceStatus: "major",
+          edCondition: "Smart Com Only",
+          customerName: "KROMBACHER BRAUEREI BERNHARD SCHADEBERG GMBH & CO. KG",
+          lineNames: "Abschieber Linie DEFGH - ReadyKit 1",
+          lastStatusChange: "June 27, 2026 at 12:49:12 PM"
+        },
+        {
+          edServiceStatus: "major",
+          edCondition: "Smart Com Only",
+          customerName: "NEWPORT SPRINGS BOTTLING",
+          lineNames: "Blow Fill Bloc Stillwater line #1",
+          lastStatusChange: "June 27, 2026 at 2:17:27 PM"
+        },
+        {
+          edServiceStatus: "major",
+          edCondition: "Subscription",
+          customerName: "Alesayi Beverage Co. Ltd.",
+          lineNames: "NRB_Glass_Line_45.000bph_2023",
+          lastStatusChange: "June 28, 2026 at 12:44:16 PM"
+        },
+        {
+          edServiceStatus: "major",
+          edCondition: "Smart Com & Sub",
+          customerName: "RAFA COMPANY",
+          lineNames: "PET Line Ergobloc L 100k - Line 2",
+          lastStatusChange: "June 27, 2026 at 11:38:49 PM"
+        },
+        {
+          edServiceStatus: "critical",
+          edCondition: "Smart Com Only",
+          customerName: "EMBOTELLADORA DE SULA SA",
+          lineNames: "Linea 96 - 25,200 bph, 0.5 PET bottle",
+          lastStatusChange: "June 28, 2026 at 12:40:07 PM"
+        },
+        {
+          edServiceStatus: "major",
+          edCondition: "Smart Com Only",
+          customerName: "AGUAS DE CABREIRO S.A.",
+          lineNames: "Glas MW Line 55.000bph",
+          lastStatusChange: "June 28, 2026 at 12:40:08 PM"
+        },
+        {
+          edServiceStatus: "major",
+          edCondition: "Smart Com Only",
+          customerName: "Al Jameel International Co. Ltd. Beverages Factory (Kinza)",
+          lineNames: "Line 3 - 120k can line",
+          lastStatusChange: "June 28, 2026 at 12:40:41 PM"
+        },
+        {
+          edServiceStatus: "major",
+          edCondition: "Subscription",
+          customerName: "Brouwerij De Brabandere NV",
+          lineNames: "Linie De Brabandere",
+          lastStatusChange: "June 28, 2026 at 7:34:22 AM"
+        },
+        {
+          edServiceStatus: "major",
+          edCondition: "Smart Com Only",
+          customerName: "Brava Food Industries Ltd.",
+          lineNames: "BF-Bloc 40'bph @ 0,3l CSD PET line",
+          lastStatusChange: "June 28, 2026 at 11:59:56 AM"
+        },
+        {
+          edServiceStatus: "major",
+          edCondition: "Subscription",
+          customerName: "Duvel Moortgat",
+          lineNames: "Line 2 - Duvel lijn 2",
+          lastStatusChange: "June 28, 2026 at 12:43:14 PM"
+        },
+        {
+          edServiceStatus: "major",
+          edCondition: "Subscription",
+          customerName: "EMBOTELLADORA MEXICANA DE BEBIDAS REFRESCANTES",
+          lineNames: "L 63.000 bph PETOW 0,4l (2022)",
+          lastStatusChange: "June 28, 2026 at 12:43:34 PM"
+        },
+        {
+          edServiceStatus: "major",
+          edCondition: "Smart Com & Sub",
+          customerName: "Global for Industrialization & Development Company",
+          lineNames: "PET Line Ergobloc L 100.000 bph",
+          lastStatusChange: "June 28, 2026 at 10:54:50 AM"
+        },
+        {
+          edServiceStatus: "major",
+          edCondition: "Subscription",
+          customerName: "Reliance Consumer Products Ltd C/O CRD Foods",
+          lineNames: "45k CSD line (500ml) Ergobloc",
+          lastStatusChange: "June 28, 2026 at 10:13:03 AM"
+        },
+        {
+          edServiceStatus: "major",
+          edCondition: "Smart Com Only",
+          customerName: "ThaiNamthip Corporation Limited Branch",
+          lineNames: "53k CSD Pet line (1,25l)",
+          lastStatusChange: "June 28, 2026 at 12:44:40 PM"
+        },
+        {
+          edServiceStatus: "major",
+          edCondition: "Subscription",
+          customerName: "Twizza Pty Ltd.",
+          lineNames: "Line 2 - Queenstown 23.300bph",
+          lastStatusChange: "June 28, 2026 at 12:18:25 PM"
+        },
+        {
+          edServiceStatus: "critical",
+          edCondition: "Smart Com Only",
+          customerName: "Naba Tabuk for Packaging Co.",
+          lineNames: "PET Line Ergobloc 100k",
+          lastStatusChange: "June 28, 2026 at 12:46:07 PM"
+        },
+        {
+          edServiceStatus: "major",
+          edCondition: "Smart Com Only",
+          customerName: "james",
+          lineNames: "Mock Line - 30.000 bph",
+          lastStatusChange: "June 28, 2026 at 12:50:07 PM"
+        }
+      ];
+
+      function toTitleCase(value) {
+        const text = String(value || "").trim().toLowerCase();
+        if (!text) {
+          return "Unknown";
+        }
+        return text.charAt(0).toUpperCase() + text.slice(1);
+      }
+
+      function normalizeWorkflowCondition() {
+        return "Subscription and Smart COM";
+      }
+
+      function toSafeSlug(value) {
+        return String(value || "")
+          .toLowerCase()
+          .replace(/[^a-z0-9]+/g, "-")
+          .replace(/^-+|-+$/g, "")
+          .slice(0, 42);
+      }
+
+      function toLastSeenTimestamp(rawValue) {
+        const normalized = String(rawValue || "").replace(" at ", " ").trim();
+        const parsed = new Date(normalized);
+        if (Number.isNaN(parsed.getTime())) {
+          return "2026-06-28 12:00:00";
+        }
+
+        const pad = (input) => String(input).padStart(2, "0");
+        return `${parsed.getFullYear()}-${pad(parsed.getMonth() + 1)}-${pad(parsed.getDate())} ${pad(parsed.getHours())}:${pad(parsed.getMinutes())}:${pad(parsed.getSeconds())}`;
+      }
+
+      function renderEdgeMonitoringRowsFromCsv() {
+        edgeMonitoringBody.innerHTML = "";
+        csvMockRows.forEach((row, index) => {
+          const tr = document.createElement("tr");
+          tr.innerHTML = `
+            <td>OK</td>
+            <td>${escapeHtml(toTitleCase(row.edServiceStatus))}</td>
+            <td>Edge Gateway</td>
+            <td>${escapeHtml(normalizeWorkflowCondition(row.edCondition))}</td>
+            <td>${escapeHtml(row.customerName)}</td>
+            <td>L${String(index + 1).padStart(2, "0")}</td>
+            <td>Imported CSV | Last Seen: ${escapeHtml(toLastSeenTimestamp(row.lastStatusChange))}</td>
+          `;
+          edgeMonitoringBody.appendChild(tr);
+        });
+      }
+
       // Keep one deterministic happy-path customer for end-to-end workflow validation.
-      const positiveCustomerName = "Acme Telecom";
+      const positiveCustomerName = "james";
 
       const sharedFailedTagNames = [
         "WS_Cur_Mach_Spd",
@@ -955,7 +1139,8 @@
       }
 
       function toProblemStatus(serviceStatus) {
-        return serviceStatus.toLowerCase() === "major" ? "Major problem" : "OK";
+        const normalized = serviceStatus.toLowerCase();
+        return normalized === "major" || normalized === "critical" ? "Major problem" : "OK";
       }
 
       function buildAccountRowsFromEdge(edgeRow) {
@@ -964,7 +1149,8 @@
           ? "Major problem"
           : "OK";
 
-        const serviceProblem = toProblemStatus(edgeRow.edServiceStatus);
+        const isPositiveCustomer = edgeRow.customerName === positiveCustomerName;
+        const serviceProblem = isPositiveCustomer ? "Major problem" : toProblemStatus(edgeRow.edServiceStatus);
         const lastSeen = extractLastSeen(edgeRow.edServiceLastStatus);
 
         return [
@@ -993,6 +1179,8 @@
           }
         ];
       }
+
+      renderEdgeMonitoringRowsFromCsv();
 
       const edgeRows = Array.from(edgeMonitoringBody.querySelectorAll("tr")).map((row) => {
         const cells = row.querySelectorAll("td");
@@ -1024,6 +1212,54 @@
           rows: buildAccountRowsFromEdge(item)
         };
       });
+
+      const generatedDasAdapters = edgeRows.map((row, index) => {
+        const sourceId = index === 0
+          ? accountMonitorSourceIds.serviceStatus
+          : index === 1
+            ? accountMonitorSourceIds.dasServiceStatus
+            : `csv-source-${String(index + 1).padStart(3, "0")}-${toSafeSlug(row.customerName)}`;
+        const failed = row.edServiceStatus.toLowerCase() === "major" || row.edServiceStatus.toLowerCase() === "critical";
+
+        return {
+          equipment: `${row.customerName} Adapter`,
+          equipmentKey: `CSV-${String(index + 1).padStart(3, "0")}`,
+          address: `opc.tcp://10.70.10.${20 + index}:4840`,
+          type: "OPC UA",
+          sourceId,
+          status: failed ? "Faulted" : "Running",
+          tagsInError: failed ? "2/120" : "0/120",
+          errorMessage: failed ? "Imported CSV scenario" : "No active faults"
+        };
+      });
+      dasAdaptersData.unshift(...generatedDasAdapters);
+
+      const generatedConnectivityRows = edgeRows.map((row, index) => {
+        const failed = row.edServiceStatus.toLowerCase() === "major" || row.edServiceStatus.toLowerCase() === "critical";
+        const uuid = `csv-${String(index + 1).padStart(4, "0")}-${toSafeSlug(row.customerName)}`;
+        const dataset = index % 2 === 0 ? "media" : "das-configs";
+
+        return {
+          dataset,
+          status: failed ? "failed" : "success",
+          equipment: `${row.customerName} Connectivity`,
+          kNumber: `KR60${String(index + 1).padStart(3, "0")}`,
+          uuid,
+          sourceId: `${uuid}_${dataset.replace("-", "_")}`,
+          ip: `172.26.90.${10 + index}`,
+          port: dataset === "media" ? "4840" : "55005"
+        };
+      });
+      connectivityRows.unshift(...generatedConnectivityRows);
+
+      if (generatedConnectivityRows.length > 0) {
+        const seededIp = generatedConnectivityRows[0].ip;
+        ssmCommandInput.value = `ping -c3 ${seededIp}`;
+        if (ssmPredefButtons[2]) {
+          ssmPredefButtons[2].dataset.command = `ping -c3 ${seededIp}`;
+          ssmPredefButtons[2].textContent = `ping -c3 ${seededIp}`;
+        }
+      }
 
       function statusBadge(status) {
         const normalized = status.toLowerCase();

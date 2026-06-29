@@ -4,9 +4,15 @@ import logging
 from pathlib import Path
 
 
+# -----------------------------------------------------------------------------
+# Logger setup
+# -----------------------------------------------------------------------------
+# Create a shared logger that writes both to file and console.
 def build_logger(logs_dir: str) -> logging.Logger:
+    # Ensure log directory exists before creating file handler.
     Path(logs_dir).mkdir(parents=True, exist_ok=True)
     logger = logging.getLogger("operation_console_monitor")
+    # Reuse existing logger to avoid duplicate handlers on repeated imports.
     if logger.handlers:
         return logger
 

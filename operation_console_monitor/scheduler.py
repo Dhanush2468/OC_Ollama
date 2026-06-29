@@ -9,6 +9,10 @@ from .config import load_config
 from .orchestrator import _run_once
 
 
+# -----------------------------------------------------------------------------
+# Scheduler entrypoint
+# -----------------------------------------------------------------------------
+# Runs once or on interval based on schedule settings from config.
 def main() -> int:
     parser = argparse.ArgumentParser(description="Schedule operation console monitoring")
     parser.add_argument("--config", required=True, help="Path to monitor.yaml")
@@ -16,8 +20,10 @@ def main() -> int:
 
     config = load_config(args.config)
     if config.schedule.mode == "one_time":
+        # Immediate single execution path.
         return _run_once(args.config)
 
+    # Recurring execution path using APScheduler interval trigger.
     scheduler = BlockingScheduler(timezone=ZoneInfo(config.schedule.timezone))
     scheduler.add_job(
         _run_once,
