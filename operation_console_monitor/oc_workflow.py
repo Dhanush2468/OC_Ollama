@@ -9,6 +9,7 @@ import re
 from dataclasses import asdict
 from datetime import datetime, timedelta
 from pathlib import Path
+from time import perf_counter
 from typing import Iterable
 from urllib import request
 
@@ -325,6 +326,8 @@ def _llm_datapoint_match(
     error_datapoints: list[str],
     reference_datapoints: set[str],
 ) -> tuple[bool, list[str], str]:
+    logger = logging.getLogger("operation_console_monitor")
+
     if not reference_datapoints:
         return True, [], "No reference datapoints configured"
 
@@ -374,8 +377,27 @@ def _llm_datapoint_match(
         method="POST",
     )
 
-    with request.urlopen(req, timeout=config.ollama.timeout_seconds) as response:
-        body = json.loads(response.read().decode("utf-8"))
+    logger.info(
+        "Ollama datapoint-match request started | model=%s | reference_count=%s | error_count=%s",
+        config.ollama.model,
+        len(reference_datapoints),
+        len(error_datapoints),
+    )
+    started = perf_counter()
+    try:
+        with request.urlopen(req, timeout=config.ollama.timeout_seconds) as response:
+            body = json.loads(response.read().decode("utf-8"))
+    except Exception as exc:
+        logger.exception("Ollama datapoint-match request failed | model=%s | error=%s", config.ollama.model, exc)
+        raise
+
+    elapsed_ms = int((perf_counter() - started) * 1000)
+    logger.info(
+        "Ollama datapoint-match response received | model=%s | elapsed_ms=%s | done=%s",
+        config.ollama.model,
+        elapsed_ms,
+        bool(body.get("done", False)),
+    )
 
     content = body.get("message", {}).get("content", "{}")
     parsed = json.loads(content) if isinstance(content, str) else {}
@@ -403,6 +425,11 @@ def _llm_datapoint_match(
 
     is_match = bool(parsed.get("is_match", False))
     reason = str(parsed.get("reason", "Ollama datapoint decision completed")).strip()
+    logger.info(
+        "Ollama datapoint-match decision | is_match=%s | matched_count=%s",
+        is_match,
+        len(matched_ordered),
+    )
     return is_match, matched_ordered, reason
 
 

@@ -2,7 +2,9 @@ from __future__ import annotations
 
 import base64
 import json
+import logging
 from pathlib import Path
+from time import perf_counter
 from urllib import request
 
 from .config import MonitorConfig
@@ -72,6 +74,8 @@ def analyze_page(
     page_html: str,
     degraded_views: list[dict] | None = None,
 ) -> dict:
+    logger = logging.getLogger("operation_console_monitor")
+
     # Step 1: Build strict JSON schema for current max-findings limit.
     schema = _build_schema(config.analysis.max_findings)
 
@@ -145,19 +149,45 @@ def analyze_page(
         headers={"Content-Type": "application/json"},
         method="POST",
     )
-    with request.urlopen(req, timeout=config.ollama.timeout_seconds) as response:
-        body = json.loads(response.read().decode("utf-8"))
+    logger.info(
+        "Ollama analyze request started | model=%s | vision_enabled=%s | image_count=%s",
+        config.ollama.model,
+        config.ollama.vision_enabled,
+        len(images),
+    )
+    started = perf_counter()
+    try:
+        with request.urlopen(req, timeout=config.ollama.timeout_seconds) as response:
+            body = json.loads(response.read().decode("utf-8"))
+    except Exception as exc:
+        logger.exception("Ollama analyze request failed | model=%s | error=%s", config.ollama.model, exc)
+        raise
+
+    elapsed_ms = int((perf_counter() - started) * 1000)
+    logger.info(
+        "Ollama analyze response received | model=%s | elapsed_ms=%s | done=%s",
+        config.ollama.model,
+        elapsed_ms,
+        bool(body.get("done", False)),
+    )
 
     # Step 6: Parse, normalize, and return safe analysis structure.
     try:
         raw_content = body["message"]["content"]
         parsed = json.loads(raw_content)
         if not isinstance(parsed, dict):
+            logger.warning("Ollama analyze returned non-dict content; using fallback summary")
             return _fallback_summary()
         parsed.setdefault("overall_status", "unknown")
         parsed.setdefault("summary", "No summary provided.")
         parsed.setdefault("summary_insights", [])
         parsed.setdefault("findings", [])
+        logger.info(
+            "Ollama analyze parsed successfully | overall_status=%s | findings_count=%s",
+            str(parsed.get("overall_status", "unknown")),
+            len(parsed.get("findings", [])) if isinstance(parsed.get("findings", []), list) else 0,
+        )
         return parsed
-    except Exception:
+    except Exception as exc:
+        logger.warning("Ollama analyze parse failed; using fallback summary | error=%s", exc)
         return _fallback_summary()
