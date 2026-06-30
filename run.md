@@ -56,8 +56,19 @@ Pull model once (internet needed only first time):
 ollama pull qwen2.5vl:7b
 ```
 
+Start the mock OC site:
 
+If you are in `oc/agent`:
+
+```bash
+python3 -m http.server 4173 --directory mock_oc_site
+```
+
+If you are in workspace root (`oc`):
+
+```bash
 python3 -m http.server 4173 --directory agent/mock_oc_site
+```
 
 
 
@@ -99,3 +110,9 @@ Notes:
 ## 7. Offline mode note
 
 After `ollama pull` completes, the full monitoring flow runs locally without external AI APIs or cloud keys.
+
+## 8. Full step-by-step workflow document
+
+For full runtime sequence (which page it visits, what each step does from start to finish), see:
+
+- `WORKFLOW_STEP_BY_STEP.md`

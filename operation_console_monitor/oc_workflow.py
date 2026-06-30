@@ -21,6 +21,7 @@ from .models import CustomerInvestigationResult, OCWorkflowReport, StepResult
 # Time parsing utilities
 # -----------------------------------------------------------------------------
 TIME_FORMATS = (
+    "%B %d, %Y at %I:%M:%S %p",
     "%Y-%m-%d %H:%M:%S",
     "%Y-%m-%d %H:%M",
     "%d-%m-%Y %H:%M",
@@ -74,6 +75,41 @@ def _load_reference_datapoints(path: str) -> set[str]:
     return points
 
 
+def _open_csv_dict_reader(csv_path: str) -> tuple[object, csv.DictReader, list[str]]:
+    """Open CSV with encoding fallbacks used by real OC exports."""
+    encodings = ("utf-8-sig", "utf-8", "cp1252", "latin-1")
+    last_error: UnicodeDecodeError | None = None
+
+    for encoding in encodings:
+        file = open(csv_path, "r", encoding=encoding, newline="")
+        try:
+            reader = csv.DictReader(file)
+            fieldnames = reader.fieldnames or []
+            return file, reader, fieldnames
+        except UnicodeDecodeError as exc:
+            file.close()
+            last_error = exc
+            continue
+
+    if last_error is not None:
+        raise last_error
+    raise UnicodeDecodeError("utf-8", b"", 0, 1, "Unable to decode CSV with supported encodings")
+
+
+def _resolve_csv_column(fieldnames: list[str], requested: str, aliases: tuple[str, ...]) -> str:
+    lookup = {name.strip().lower(): name for name in fieldnames}
+    requested_key = requested.strip().lower()
+    if requested_key in lookup:
+        return lookup[requested_key]
+
+    for alias in aliases:
+        alias_key = alias.strip().lower()
+        if alias_key in lookup:
+            return lookup[alias_key]
+
+    return ""
+
+
 # -----------------------------------------------------------------------------
 # CSV customer selection helpers
 # -----------------------------------------------------------------------------
@@ -90,27 +126,34 @@ def _customers_from_csv(
     customers: list[tuple[str, str]] = []
     seen: set[str] = set()
 
-    with open(csv_path, "r", encoding="utf-8-sig", newline="") as file:
-        reader = csv.DictReader(file)
-        fieldnames = reader.fieldnames or []
+    file, reader, fieldnames = _open_csv_dict_reader(csv_path)
+    try:
 
         effective_timestamp_col = timestamp_column
         effective_customer_col = customer_column
 
         # Fallbacks for mock OC CSV export headers.
-        if effective_timestamp_col not in fieldnames:
-            if "ED Service Last Status (Last Seen)" in fieldnames:
-                effective_timestamp_col = "ED Service Last Status (Last Seen)"
-            elif "Last Seen" in fieldnames:
-                effective_timestamp_col = "Last Seen"
-            else:
-                raise KeyError(f"Missing column: {timestamp_column}")
+        resolved_timestamp_col = _resolve_csv_column(
+            fieldnames,
+            effective_timestamp_col,
+            (
+                "ED Service Last Status (Last Seen)",
+                "ED Service Last Status Change (datetime)",
+                "Last Seen",
+            ),
+        )
+        if not resolved_timestamp_col:
+            raise KeyError(f"Missing column: {timestamp_column}")
+        effective_timestamp_col = resolved_timestamp_col
 
-        if effective_customer_col not in fieldnames:
-            if "Customer Name" in fieldnames:
-                effective_customer_col = "Customer Name"
-            else:
-                raise KeyError(f"Missing column: {customer_column}")
+        resolved_customer_col = _resolve_csv_column(
+            fieldnames,
+            effective_customer_col,
+            ("Customer Name",),
+        )
+        if not resolved_customer_col:
+            raise KeyError(f"Missing column: {customer_column}")
+        effective_customer_col = resolved_customer_col
 
         for row in reader:
             customer = str(row.get(effective_customer_col, "")).strip()
@@ -127,6 +170,8 @@ def _customers_from_csv(
                 seen.add(customer)
                 if len(customers) >= max_customers:
                     break
+    finally:
+        file.close()
 
     return customers
 
@@ -141,24 +186,32 @@ def _customers_from_csv_no_window(
     customers: list[tuple[str, str]] = []
     seen: set[str] = set()
 
-    with open(csv_path, "r", encoding="utf-8-sig", newline="") as file:
-        reader = csv.DictReader(file)
-        fieldnames = reader.fieldnames or []
+    file, reader, fieldnames = _open_csv_dict_reader(csv_path)
+    try:
 
         effective_timestamp_col = timestamp_column
         effective_customer_col = customer_column
 
-        if effective_timestamp_col not in fieldnames:
-            if "ED Service Last Status (Last Seen)" in fieldnames:
-                effective_timestamp_col = "ED Service Last Status (Last Seen)"
-            elif "Last Seen" in fieldnames:
-                effective_timestamp_col = "Last Seen"
+        resolved_timestamp_col = _resolve_csv_column(
+            fieldnames,
+            effective_timestamp_col,
+            (
+                "ED Service Last Status (Last Seen)",
+                "ED Service Last Status Change (datetime)",
+                "Last Seen",
+            ),
+        )
+        if resolved_timestamp_col:
+            effective_timestamp_col = resolved_timestamp_col
 
-        if effective_customer_col not in fieldnames:
-            if "Customer Name" in fieldnames:
-                effective_customer_col = "Customer Name"
-            else:
-                raise KeyError(f"Missing column: {customer_column}")
+        resolved_customer_col = _resolve_csv_column(
+            fieldnames,
+            effective_customer_col,
+            ("Customer Name",),
+        )
+        if not resolved_customer_col:
+            raise KeyError(f"Missing column: {customer_column}")
+        effective_customer_col = resolved_customer_col
 
         for row in reader:
             customer = str(row.get(effective_customer_col, "")).strip()
@@ -173,8 +226,83 @@ def _customers_from_csv_no_window(
             seen.add(customer)
             if len(customers) >= max_customers:
                 break
+    finally:
+        file.close()
 
     return customers
+
+
+def _select_customers_for_loop(
+    csv_path: str,
+    timestamp_column: str,
+    customer_column: str,
+    window_hours: int,
+    max_customers: int,
+    no_window_fraction: float,
+) -> tuple[list[tuple[str, str]], str]:
+    window_customers = _customers_from_csv(
+        csv_path=csv_path,
+        timestamp_column=timestamp_column,
+        customer_column=customer_column,
+        window_hours=window_hours,
+        max_customers=max_customers,
+    )
+
+    fraction = max(0.0, min(1.0, float(no_window_fraction)))
+    if fraction <= 0.0:
+        if window_customers:
+            return window_customers, "strict_window_only"
+        fallback_customers = _customers_from_csv_no_window(
+            csv_path=csv_path,
+            timestamp_column=timestamp_column,
+            customer_column=customer_column,
+            max_customers=max_customers,
+        )
+        return fallback_customers, "fallback_no_window_all"
+
+    bypass_target = int(round(max_customers * fraction))
+    bypass_target = max(0, min(max_customers, bypass_target))
+    window_target = max(0, max_customers - bypass_target)
+
+    no_window_customers = _customers_from_csv_no_window(
+        csv_path=csv_path,
+        timestamp_column=timestamp_column,
+        customer_column=customer_column,
+        max_customers=max_customers,
+    )
+
+    selected: list[tuple[str, str]] = []
+    seen_names: set[str] = set()
+
+    # Keep a window-constrained segment first.
+    for item in window_customers:
+        name = item[0]
+        if name in seen_names:
+            continue
+        selected.append(item)
+        seen_names.add(name)
+        if len(selected) >= window_target:
+            break
+
+    strict_names = {name for name, _ in window_customers}
+    bypass_added = 0
+
+    # Prefer bypass customers that are outside the strict 24-hour set.
+    for item in no_window_customers:
+        name = item[0]
+        if name in seen_names or name in strict_names:
+            continue
+        selected.append(item)
+        seen_names.add(name)
+        bypass_added += 1
+        if bypass_added >= bypass_target or len(selected) >= max_customers:
+            break
+
+    mode = (
+        f"mixed_window_and_no_window(window={len(window_customers)}, "
+        f"window_target={window_target}, target_bypass={bypass_target}, selected={len(selected)})"
+    )
+    return selected, mode
 
 
 # -----------------------------------------------------------------------------
@@ -594,25 +722,18 @@ async def _run_workflow_async(config: MonitorConfig, run_id: str, timestamp: str
             log_step(f"Downloaded CSV detected: {downloaded_csv}")
 
             log_step("Executing Step 7-8: filter customers in 24-hour window and prepare loop list")
-            customers = _customers_from_csv(
+            customers, selection_mode = _select_customers_for_loop(
                 csv_path=downloaded_csv,
                 timestamp_column=config.oc_workflow.timestamp_column,
                 customer_column=config.oc_workflow.customer_column,
                 window_hours=config.oc_workflow.window_hours,
                 max_customers=config.oc_workflow.max_customers_per_run,
+                no_window_fraction=config.oc_workflow.no_window_fraction,
             )
+            log_step(f"Customer selection mode: {selection_mode}")
 
             if not customers:
-                fallback_customers = _customers_from_csv_no_window(
-                    csv_path=downloaded_csv,
-                    timestamp_column=config.oc_workflow.timestamp_column,
-                    customer_column=config.oc_workflow.customer_column,
-                    max_customers=config.oc_workflow.max_customers_per_run,
-                )
-                customers = fallback_customers
-                warning_line = (
-                    "No customers found in strict 24-hour window; using fallback list from CSV without window filter."
-                )
+                warning_line = "No customers selected from CSV after applying selection rules."
                 phase_logs.append(f"[WARN] {warning_line}")
                 logger.warning("[WARN] %s", warning_line)
 
@@ -626,25 +747,18 @@ async def _run_workflow_async(config: MonitorConfig, run_id: str, timestamp: str
             )
             log_step(f"Using provided CSV for Step 2 start: {downloaded_csv}")
             log_step("Executing Step 7-8: filter customers in 24-hour window and prepare loop list")
-            customers = _customers_from_csv(
+            customers, selection_mode = _select_customers_for_loop(
                 csv_path=downloaded_csv,
                 timestamp_column=config.oc_workflow.timestamp_column,
                 customer_column=config.oc_workflow.customer_column,
                 window_hours=config.oc_workflow.window_hours,
                 max_customers=config.oc_workflow.max_customers_per_run,
+                no_window_fraction=config.oc_workflow.no_window_fraction,
             )
+            log_step(f"Customer selection mode: {selection_mode}")
 
             if not customers:
-                fallback_customers = _customers_from_csv_no_window(
-                    csv_path=downloaded_csv,
-                    timestamp_column=config.oc_workflow.timestamp_column,
-                    customer_column=config.oc_workflow.customer_column,
-                    max_customers=config.oc_workflow.max_customers_per_run,
-                )
-                customers = fallback_customers
-                warning_line = (
-                    "No customers found in strict 24-hour window; using fallback list from CSV without window filter."
-                )
+                warning_line = "No customers selected from CSV after applying selection rules."
                 phase_logs.append(f"[WARN] {warning_line}")
                 logger.warning("[WARN] %s", warning_line)
 
@@ -782,7 +896,79 @@ async def _run_workflow_async(config: MonitorConfig, run_id: str, timestamp: str
                         )
                     )
 
-                log_step("Executing Step 11-14: validate status, service status, adapter ID, datapoints")
+                log_step("Executing Step 11: validate component status is Major Problem")
+                major_problem_detected = False
+                component_checks: list[str] = []
+                try:
+                    rows = page.locator("#account-status-body tr")
+                    row_count = await rows.count()
+                    target_labels = {"service status", "das service status", "component status"}
+
+                    for row_index in range(row_count):
+                        row = rows.nth(row_index)
+                        try:
+                            label_text = (await row.locator("td").first.inner_text(timeout=timeout_ms)).strip().lower()
+                        except Exception:
+                            continue
+
+                        if label_text not in target_labels:
+                            continue
+
+                        row_text = (await row.inner_text(timeout=timeout_ms)).strip()
+                        is_major_problem = bool(re.search(r"\bmajor\s*problem\b", row_text, flags=re.IGNORECASE))
+                        major_problem_detected = major_problem_detected or is_major_problem
+                        component_checks.append(
+                            f"{label_text}={'major_problem' if is_major_problem else 'not_major_problem'}"
+                        )
+                except Exception as component_exc:
+                    component_checks.append(f"component_status_parse_failed={component_exc}")
+
+                if not major_problem_detected:
+                    status = "skipped"
+                    outcome = "Skipped - Not Eligible (Component status not Major Problem)"
+                    steps.append(
+                        StepResult(
+                            name="validate_component_status",
+                            status="failed",
+                            details=(
+                                "; ".join(component_checks)
+                                if component_checks
+                                else "No component/service status row with Major Problem"
+                            ),
+                        )
+                    )
+                    results.append(
+                        CustomerInvestigationResult(
+                            customer_name=customer_name,
+                            timestamp_iso=customer_ts,
+                            status=status,
+                            adapter_id=adapter_id,
+                            machine_ip=machine_ip,
+                            matched_datapoints=matched_datapoints,
+                            error_datapoints=error_datapoints,
+                            evidence_account_monitoring_screenshot=account_monitoring_evidence_screenshot,
+                            evidence_account_monitoring_service_status_screenshot=account_monitoring_service_status_evidence_screenshot,
+                            evidence_account_monitoring_das_service_status_screenshot=account_monitoring_das_service_status_evidence_screenshot,
+                            evidence_das_validation_screenshot=das_validation_evidence_screenshot,
+                            evidence_das_validation_all_rows_screenshot=das_validation_all_rows_evidence_screenshot,
+                            evidence_das_validation_observed_source_ids=das_validation_observed_source_ids,
+                            evidence_das_validation_source_id_match=das_validation_source_id_match,
+                            outcome=outcome,
+                            steps=steps,
+                        )
+                    )
+                    log_phase(f"Phase B completed for '{customer_name}' with status: {status}")
+                    continue
+
+                steps.append(
+                    StepResult(
+                        name="validate_component_status",
+                        status="ok",
+                        details="Component status shows Major Problem; proceeding to Readkit",
+                    )
+                )
+
+                log_step("Executing Step 12-15: validate Readkit status, service status, adapter ID, datapoints")
                 _ = await page.inner_text("body")
                 # Mock readkit tab exposes KOP/RK/ED style status rows.
                 await _click_any(page, ["#account-tab-readkit", "text=Readkit Status"], timeout_ms)
@@ -792,21 +978,94 @@ async def _run_workflow_async(config: MonitorConfig, run_id: str, timestamp: str
                 try:
                     readkit_scope = page.locator("#readkit-status-body").first
                     readkit_text = await readkit_scope.inner_text(timeout=timeout_ms)
-                    readkit_html = await readkit_scope.inner_html(timeout=timeout_ms)
                 except Exception:
                     # Fallback keeps behavior predictable if selectors are unavailable.
                     readkit_text = await page.inner_text("body")
-                    readkit_html = await page.content()
 
-                has_error_state = (
-                    "status-badge warn" in readkit_html
-                    or bool(re.search(r"\bError\b", readkit_text, flags=re.IGNORECASE))
-                )
+                target_labels = ("kop", "rk", "ed")
+                non_ok_pattern = re.compile(r"\b(error|warn|warning|critical|major|minor|failed|down|unknown)\b", re.IGNORECASE)
+                ok_pattern = re.compile(r"\bok\b", re.IGNORECASE)
+
+                # Track per-label state: ok | non_ok | unknown.
+                label_states: dict[str, str] = {}
+                for label in target_labels:
+                    label_states[label] = "unknown"
+
+                # Prefer structured table parsing so label/status in separate cells works.
+                parsed_table_rows = False
+                try:
+                    rows = page.locator("#readkit-status-body tr")
+                    row_count = await rows.count()
+                    for row_index in range(row_count):
+                        row = rows.nth(row_index)
+                        cells = row.locator("td")
+                        if await cells.count() == 0:
+                            continue
+
+                        label_text = (await cells.nth(0).inner_text(timeout=timeout_ms)).strip().lower()
+                        row_text = (await row.inner_text(timeout=timeout_ms)).strip()
+                        status_text = row_text
+                        status_html = (await row.inner_html(timeout=timeout_ms)).lower()
+                        if await cells.count() > 1:
+                            status_text = (await cells.nth(1).inner_text(timeout=timeout_ms)).strip()
+                            status_html = (await cells.nth(1).inner_html(timeout=timeout_ms)).lower()
+
+                        for label in target_labels:
+                            if not re.search(rf"\b{label}\b", label_text):
+                                continue
+
+                            parsed_table_rows = True
+                            has_non_ok = bool(non_ok_pattern.search(status_text)) or (
+                                "status-badge warn" in status_html
+                                or "status-badge error" in status_html
+                                or "badge warn" in status_html
+                                or "badge error" in status_html
+                            )
+                            has_ok = (
+                                bool(ok_pattern.search(status_text)) and not has_non_ok
+                            ) or ("status-badge ok" in status_html or "badge ok" in status_html)
+
+                            if has_ok:
+                                label_states[label] = "ok"
+                            elif has_non_ok:
+                                label_states[label] = "non_ok"
+                except Exception:
+                    parsed_table_rows = False
+
+                # Fallback to line parsing when table markup is unavailable.
+                if not parsed_table_rows:
+                    readkit_lines = [line.strip() for line in readkit_text.splitlines() if line.strip()]
+                    for line in readkit_lines:
+                        lowered = line.lower()
+                        for label in target_labels:
+                            if not re.search(rf"\b{label}\b", lowered):
+                                continue
+                            has_non_ok = bool(non_ok_pattern.search(line))
+                            has_ok = bool(ok_pattern.search(line)) and not has_non_ok
+                            if has_ok:
+                                label_states[label] = "ok"
+                            elif has_non_ok:
+                                label_states[label] = "non_ok"
+
+                all_labels_ok = all(label_states.get(label) == "ok" for label in target_labels)
+                any_label_non_ok = any(label_states.get(label) == "non_ok" for label in target_labels)
+
+                if all_labels_ok:
+                    status_ok = True
+                elif any_label_non_ok:
+                    status_ok = False
+                else:
+                    # Ambiguous/partial status: continue unless explicit non-ok text exists.
+                    status_ok = not bool(non_ok_pattern.search(readkit_text))
+
                 await _click_any(page, ["#account-tab-service", "text=Service Status"], timeout_ms)
-                if has_error_state:
+                if not status_ok:
                     status = "skipped"
                     outcome = "Skipped - Not Eligible (Status not OK)"
-                    steps.append(StepResult(name="validate_ed_status", status="failed", details="KOP/RK/ED status contains Error"))
+                    details = (
+                        f"KOP/RK/ED status not explicitly OK; checks={label_states}"
+                    )
+                    steps.append(StepResult(name="validate_ed_status", status="failed", details=details))
                     results.append(
                         CustomerInvestigationResult(
                             customer_name=customer_name,
@@ -899,11 +1158,27 @@ async def _run_workflow_async(config: MonitorConfig, run_id: str, timestamp: str
                         )
                     )
 
-                try:
-                    await page.select_option("#das-detail-state-filter", value="error", timeout=timeout_ms)
-                except Exception:
+                requested_state = str(config.oc_workflow.das_state_filter).strip().lower() or "faulted"
+                state_candidates: list[str] = []
+                for candidate in (requested_state, "faulted", "error"):
+                    if candidate and candidate not in state_candidates:
+                        state_candidates.append(candidate)
+
+                state_applied = False
+                for candidate in state_candidates:
+                    try:
+                        await page.select_option("#das-detail-state-filter", value=candidate, timeout=timeout_ms)
+                        state_applied = True
+                        break
+                    except Exception:
+                        continue
+
+                if not state_applied:
                     await _click_text(page, "STATE", timeout_ms)
-                    await _click_text(page, "error", timeout_ms)
+                    for candidate in state_candidates:
+                        if await _click_text(page, candidate, timeout_ms):
+                            state_applied = True
+                            break
                 await page.wait_for_timeout(300)
 
                 das_text = await page.inner_text("body")

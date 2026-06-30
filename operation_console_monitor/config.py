@@ -53,8 +53,10 @@ class AnalysisConfig:
 @dataclass
 class OCWorkflowConfig:
     window_hours: int = 24
+    no_window_fraction: float = 0.0
     timestamp_column: str = "timestamp"
     customer_column: str = "customer"
+    das_state_filter: str = "faulted"
     max_customers_per_run: int = 50
     downloaded_csv_glob: str = "*.csv"
     datapoints_reference_file: str = ""
