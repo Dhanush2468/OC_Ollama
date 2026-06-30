@@ -106,7 +106,7 @@ For each customer (loop):
 22. Validate source ID match between Account Monitoring and DAS rows.
 23. Capture DAS filtered evidence.
 24. Datapoint eligibility gate:
-   - If reference list exists, call Ollama to check match.
+   - If `oc_workflow.datapoints_reference_file` is configured, call Ollama to match error datapoints/endpoints against the reference list.
    - If mismatch, skip customer.
 25. Go to Monitoring -> SSM.
 26. Run ping command (ping -c3 <machine_ip>) and check output.
