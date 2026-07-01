@@ -84,8 +84,9 @@ app.include_router(statistics.router, prefix="/api", tags=["Statistics"])
 async def home(request: Request):
     """Home dashboard page."""
     return templates.TemplateResponse(
+        request,
         "index.html",
-        {"request": request, "title": "Dashboard"},
+        {"title": "Dashboard"},
     )
 
 
@@ -93,8 +94,9 @@ async def home(request: Request):
 async def runs_page(request: Request):
     """Monitoring runs browser page."""
     return templates.TemplateResponse(
+        request,
         "runs.html",
-        {"request": request, "title": "Monitoring Runs"},
+        {"title": "Monitoring Runs"},
     )
 
 
@@ -102,8 +104,9 @@ async def runs_page(request: Request):
 async def run_detail_page(request: Request, run_id: str):
     """Run details page."""
     return templates.TemplateResponse(
+        request,
         "run_detail.html",
-        {"request": request, "title": f"Run {run_id}", "run_id": run_id},
+        {"title": f"Run {run_id}", "run_id": run_id},
     )
 
 
@@ -111,8 +114,9 @@ async def run_detail_page(request: Request, run_id: str):
 async def findings_page(request: Request):
     """Findings browser page."""
     return templates.TemplateResponse(
+        request,
         "findings.html",
-        {"request": request, "title": "Findings"},
+        {"title": "Findings"},
     )
 
 
@@ -120,8 +124,9 @@ async def findings_page(request: Request):
 async def statistics_page(request: Request):
     """Statistics and trends page."""
     return templates.TemplateResponse(
+        request,
         "statistics.html",
-        {"request": request, "title": "Statistics"},
+        {"title": "Statistics"},
     )
 
 

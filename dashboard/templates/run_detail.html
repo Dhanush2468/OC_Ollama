@@ -1,0 +1,110 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div x-data="runDetailPage('{{ run_id }}')" x-init="init()">
+    <div class="mb-6">
+        <a href="/runs" class="text-sm text-blue-600 hover:text-blue-800">← Back to Runs</a>
+    </div>
+
+    <div class="flex justify-between items-center mb-6">
+        <h2 class="text-2xl font-semibold text-gray-900">Run Details: <span x-text="runId"></span></h2>
+        <button @click="init" class="inline-flex items-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50">
+            <i class="fas fa-rotate-right mr-2"></i>
+            Refresh
+        </button>
+    </div>
+
+    <template x-if="error">
+        <div class="mb-6 p-4 text-red-700 bg-red-50 border border-red-100 rounded-lg" x-text="error"></div>
+    </template>
+
+    <div class="bg-white shadow rounded-lg p-6 mb-8" x-show="run">
+        <h3 class="text-lg font-medium text-gray-900 mb-4">Summary</h3>
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
+            <p><span class="font-semibold text-gray-700">Run ID:</span> <span class="text-gray-900" x-text="run.id"></span></p>
+            <p><span class="font-semibold text-gray-700">Timestamp:</span> <span class="text-gray-900" x-text="formatDate(run.timestamp)"></span></p>
+            <p><span class="font-semibold text-gray-700">Mode:</span> <span class="text-gray-900" x-text="run.execution_mode"></span></p>
+            <p><span class="font-semibold text-gray-700">Status:</span> <span class="text-gray-900" x-text="run.overall_status || 'unknown'"></span></p>
+            <p><span class="font-semibold text-gray-700">Findings:</span> <span class="text-gray-900" x-text="run.findings_count"></span></p>
+            <p><span class="font-semibold text-gray-700">Duration:</span> <span class="text-gray-900" x-text="formatDuration(run.duration_seconds)"></span></p>
+            <p class="md:col-span-2"><span class="font-semibold text-gray-700">Page Title:</span> <span class="text-gray-900" x-text="run.page_title || '-'"></span></p>
+            <p class="md:col-span-2"><span class="font-semibold text-gray-700">Summary:</span> <span class="text-gray-900" x-text="run.summary || '-'"></span></p>
+        </div>
+    </div>
+
+    <div class="bg-white shadow rounded-lg p-6">
+        <h3 class="text-lg font-medium text-gray-900 mb-4">Workflow Results</h3>
+
+        <template x-if="workflowResults.length === 0">
+            <p class="text-gray-500">No workflow results found for this run.</p>
+        </template>
+
+        <template x-if="workflowResults.length > 0">
+            <div class="space-y-4">
+                <template x-for="result in workflowResults" :key="result.id">
+                    <div class="border border-gray-200 rounded-lg p-4">
+                        <div class="flex justify-between items-center mb-2">
+                            <h4 class="font-semibold text-gray-900" x-text="result.customer_name"></h4>
+                            <span class="text-sm text-gray-600" x-text="result.status"></span>
+                        </div>
+                        <p class="text-sm text-gray-700"><span class="font-medium">Outcome:</span> <span x-text="result.outcome || '-'"></span></p>
+                        <p class="text-sm text-gray-700"><span class="font-medium">Adapter ID:</span> <span x-text="result.adapter_id || '-'"></span></p>
+                        <p class="text-sm text-gray-700"><span class="font-medium">Machine IP:</span> <span x-text="result.machine_ip || '-'"></span></p>
+                    </div>
+                </template>
+            </div>
+        </template>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+    function runDetailPage(runId) {
+        return {
+            runId,
+            run: null,
+            workflowResults: [],
+            error: '',
+
+            async init() {
+                await Promise.all([this.loadRun(), this.loadWorkflowResults()]);
+            },
+
+            async loadRun() {
+                try {
+                    const response = await fetch(`/api/runs/${this.runId}`);
+                    if (!response.ok) {
+                        throw new Error(`HTTP ${response.status}`);
+                    }
+                    this.run = await response.json();
+                } catch (error) {
+                    this.error = `Failed to load run details: ${error.message}`;
+                }
+            },
+
+            async loadWorkflowResults() {
+                try {
+                    const response = await fetch(`/api/runs/${this.runId}/workflow-results`);
+                    if (!response.ok) {
+                        throw new Error(`HTTP ${response.status}`);
+                    }
+                    this.workflowResults = await response.json();
+                } catch (error) {
+                    this.error = `Failed to load workflow results: ${error.message}`;
+                }
+            },
+
+            formatDate(value) {
+                if (!value) return '-';
+                return new Date(value).toLocaleString();
+            },
+
+            formatDuration(value) {
+                if (value == null) return '-';
+                return `${Number(value).toFixed(1)}s`;
+            }
+        };
+    }
+</script>
+{% endblock %}
